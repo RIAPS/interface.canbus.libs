@@ -6,7 +6,7 @@ from CanbusSystemSettings import CanbusSystem
 import yaml
 import spdlog
 import capnp
-import device_capnp
+#import device_capnp
 import os
 import datetime
 import struct
@@ -61,7 +61,7 @@ class CanbusDevice(Component):
         # receive
         start = datetime.datetime.now()  # measure how long it takes to complete query
         msg_bytes = self.device_port.recv()  # required to remove message from queue
-        msg = device_capnp.DeviceQry.from_bytes(msg_bytes)
+        # msg = device_capnp.DeviceQry.from_bytes(msg_bytes)
 
     # riaps:keep_device_port:end
 
