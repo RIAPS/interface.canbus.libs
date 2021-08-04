@@ -10,6 +10,8 @@ Creates a local master to allow active update of some modbus parameters as neede
 """
 from posixpath import join
 import can
+from can import bus
+from can import message
 from CanbusSystemSettings import CanbusSystem
 import helper
 import sys
@@ -68,8 +70,9 @@ class SendMsgThread( threading.Thread ):
         print( "SendMsg thread exited." )
 
 class RecvMsgThread( threading.Thread ):
-    def __init__(self, thread_name, canbus ):
+    def __init__(self, thread_name, canbus, ids ):
         threading.Thread.__init__(self)
+        self.ids = ids
         self.canbus = canbus
         self.thread_name = thread_name
         self.active = threading.Event()
@@ -85,7 +88,10 @@ class RecvMsgThread( threading.Thread ):
             msg = self.canbus.recv( timeout=1.0 )   
             if( msg != None ) :
                 try:
-                    RecvQueue.put( msg, block=False )
+                    # print( "id={0} : id list={1}".format(   hex( msg.arbitration_id )[2:].zfill(3), 
+                    #                                         [ hex( n )[2:].zfill(3) for n in self.ids ] ) )
+                    if msg.arbitration_id in self.ids : 
+                        RecvQueue.put( msg, block=False )
                 except queue.Full:
                     print( "Received CAN message [{msg}] could not be queued.")
 
@@ -98,6 +104,7 @@ def main():
     parser.add_argument('--ID', required=False, help="The CANbus message ID to publish on the bus. Default = 0x123" )
     parser.add_argument('--DATA', required=False, help="The data to send, a list in the format 1,2,3,4. Default = 0" )
     parser.add_argument('--FREQ', required=False , help="The frequency at which to send the data. Default = 1.0 Hz")
+    parser.add_argument('--IDLIST', required=False , help="The list if message IDs to monitor 0x001,0x043,0x310.  Default = 0x001")
 
     if platform.system().upper() == 'WINDOWS' :
         pass
@@ -129,16 +136,25 @@ def main():
     else:
         FREQ = float( args.FREQ )    
 
+    if args.IDLIST == None :
+        IDLIST = [0x001,]
+    else:
+        strs = str(args.IDLIST).split(",")
+        IDLIST = [ int(i,base=16) for i in strs ]
+
     print( "CH={0}".format( CH ) )    
     print( "ID=0x{0}".format( hex( ID )[2:].zfill(3) ) )    
     print( "DATA={0}".format( DATA ) )    
     print( "FREQ={0}".format( FREQ ) )    
+    print( "IDLIST={0}".format( [ hex( n )[2:].zfill(3) for n in IDLIST ] ) )    
+
     send_period = 1.0/FREQ
 
     bus = can.interface.Bus(channel=CH, bustype='socketcan_native')
     msg = can.Message( arbitration_id=ID, data=DATA, extended_id=False )
     
-    recv_thread = RecvMsgThread( "CANRecv", bus )
+    
+    recv_thread = RecvMsgThread( "CANRecv", bus, IDLIST )
     send_thread = SendMsgThread( "CANSend", bus, 1.0 )
     input_watcher = InputWatcher()
 
