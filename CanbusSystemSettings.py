@@ -13,6 +13,6 @@ class CanbusSystem:
     class Debugging:
         Verbose = True      # modbus communication informational message level
         Diagnostics = False
-        DebugLevel = 0
+        DebugLevel = 1
         
            
