@@ -28,7 +28,7 @@
 
     $ sudo ip link set can0 up type can bitrate 500000  
 
-### Run CanbuSim.py   
+### Run CanbusSim.py   
 
     $ python3 CanbusSim.py --CH can0 --ID 0x043 --DATA 0,25,0,1,3,0,150 --FREQ 1.0 --IDLIST 0x044
 
