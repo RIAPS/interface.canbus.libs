@@ -36,5 +36,5 @@
     --ID = The message ID to publish on the CAN bus.
     --DATA = List of data bytes to send with the message ID.
     --FREQ = The frequency at which to publish the message.
-    --IDLIST = Filter for messages IDs that should be printed.
+    --IDLIST = Filter for received messages IDs that should be printed.
 
