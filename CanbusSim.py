@@ -90,10 +90,13 @@ class RecvMsgThread( threading.Thread ):
                 try:
                     # print( "id={0} : id list={1}".format(   hex( msg.arbitration_id )[2:].zfill(3), 
                     #                                         [ hex( n )[2:].zfill(3) for n in self.ids ] ) )
-                    if msg.arbitration_id in self.ids : 
+                    if (self.ids == None) or (msg.arbitration_id in self.ids) : 
                         RecvQueue.put( msg, block=False )
                 except queue.Full:
                     print( "Received CAN message [{msg}] could not be queued.")
+            else:
+                pass
+                # print( "Waiting for received message" )
 
 
         print( "RecvMsg thread exited." )
@@ -104,7 +107,7 @@ def main():
     parser.add_argument('--ID', required=False, help="The CANbus message ID to publish on the bus. Default = 0x123" )
     parser.add_argument('--DATA', required=False, help="The data to send, a list in the format 1,2,3,4. Default = 0" )
     parser.add_argument('--FREQ', required=False , help="The frequency at which to send the data. Default = 1.0 Hz")
-    parser.add_argument('--IDLIST', required=False , help="The list if message IDs to monitor 0x001,0x043,0x310.  Default = 0x001")
+    parser.add_argument('--IDLIST', required=False , help="The list if message IDs to monitor 0x001,0x043,0x310.  Default = 0x000")
 
     if platform.system().upper() == 'WINDOWS' :
         pass
@@ -137,21 +140,26 @@ def main():
         FREQ = float( args.FREQ )    
 
     if args.IDLIST == None :
-        IDLIST = [0x001,]
+        IDLIST = None
     else:
         strs = str(args.IDLIST).split(",")
-        IDLIST = [ int(i,base=16) for i in strs ]
+        if len( strs ) > 0 :
+            IDLIST = [ int(i,base=16) for i in strs ]
+        else:
+            IDLIST = None
 
     print( "CH={0}".format( CH ) )    
     print( "ID=0x{0}".format( hex( ID )[2:].zfill(3) ) )    
     print( "DATA={0}".format( DATA ) )    
-    print( "FREQ={0}".format( FREQ ) )    
-    print( "IDLIST={0}".format( [ hex( n )[2:].zfill(3) for n in IDLIST ] ) )    
+    print( "FREQ={0}".format( FREQ ) )
+    if IDLIST != None :    
+        print( "IDLIST={0}".format( [ hex( n )[2:].zfill(3) for n in IDLIST ] ) )    
+    else:
+        print( "IDLIST={0}".format( "No filter message IDs" ) )
 
     send_period = 1.0/FREQ
 
     bus = can.interface.Bus(channel=CH, bustype='socketcan_native')
-    msg = can.Message( arbitration_id=ID, data=DATA, extended_id=False )
     
     
     recv_thread = RecvMsgThread( "CANRecv", bus, IDLIST )
@@ -177,6 +185,7 @@ def main():
             try:
                 if (t2 - t1).total_seconds() > send_period :
                     t1 = t2
+                    msg = can.Message( timestamp=datetime.datetime.timestamp( t2 ), arbitration_id=ID, data=DATA, extended_id=False )
                     SendQueue.put( msg, block=False )
             except queue.Full:
                 pass
