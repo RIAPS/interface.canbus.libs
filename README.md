@@ -2,6 +2,7 @@
 
 ### Required Raspberry Pi3 
 ### PiCAN2 module attached and connected to an operational CAN bus
+    Note: Jumper JP3 is required on at least 2 modules connected to a single CAN bus.
 
 ### Complete all updates and upgrades
 
