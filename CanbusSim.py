@@ -108,6 +108,7 @@ def main():
     parser.add_argument('--DATA', required=False, help="The data to send, a list in the format 1,2,3,4. Default = 0" )
     parser.add_argument('--FREQ', required=False , help="The frequency at which to send the data. Default = 1.0 Hz")
     parser.add_argument('--IDLIST', required=False , help="The list if message IDs to monitor 0x001,0x043,0x310.  Default = 0x000")
+    parser.add_argument('--MODE', required=False , help="The send(receive) mode either S, R, or SR.  Default = SR")
 
     if platform.system().upper() == 'WINDOWS' :
         pass
@@ -137,7 +138,12 @@ def main():
     if args.FREQ == None :
         FREQ = 1.0
     else:
-        FREQ = float( args.FREQ )    
+        FREQ = float( args.FREQ )   
+
+    if args.MODE == None :
+        MODE = 'SR'
+    else:
+        MODE = args.MODE    
 
     if args.IDLIST == None :
         IDLIST = None
@@ -156,24 +162,31 @@ def main():
         print( "IDLIST={0}".format( [ hex( n )[2:].zfill(3) for n in IDLIST ] ) )    
     else:
         print( "IDLIST={0}".format( "No filter message IDs" ) )
+    
+    print( "MODE={0}".format( MODE ) )
 
     send_period = 1.0/FREQ
 
-    bus = can.interface.Bus(channel=CH, bustype='socketcan_native')
+    bus = can.interface.Bus(channel=CH, bustype='socketcan_native' )
     
-    
-    recv_thread = RecvMsgThread( "CANRecv", bus, IDLIST )
-    send_thread = SendMsgThread( "CANSend", bus, 1.0 )
     input_watcher = InputWatcher()
-
     input_watcher.start()
-    recv_thread.start()
-    send_thread.start()
+
+    recv_thread = RecvMsgThread( "CANRecv", bus, IDLIST )
+    if "R" in MODE : 
+        recv_thread.start()
+
+    send_thread = SendMsgThread( "CANSend", bus, 1.0 )
+    if "S" in MODE :
+        send_thread.start()
+
     t1 = datetime.datetime.now()
     while send_thread.is_alive() or recv_thread.is_alive():
         if not input_watcher.is_alive() :
-            recv_thread.Deactivate()
-            send_thread.Deactivate()
+            if recv_thread.is_alive() :
+                recv_thread.Deactivate()
+            if send_thread.is_alive() :
+                send_thread.Deactivate()
         else:
             try:
                 message = RecvQueue.get( block=False )
@@ -181,14 +194,15 @@ def main():
             except queue.Empty:
                 pass
 
-            t2 = datetime.datetime.now()
-            try:
-                if (t2 - t1).total_seconds() > send_period :
-                    t1 = t2
-                    msg = can.Message( timestamp=datetime.datetime.timestamp( t2 ), arbitration_id=ID, data=DATA, extended_id=False )
-                    SendQueue.put( msg, block=False )
-            except queue.Full:
-                pass
+            if send_thread.is_alive() :
+                t2 = datetime.datetime.now()
+                try:
+                    if (t2 - t1).total_seconds() > send_period :
+                        t1 = t2
+                        msg = can.Message( timestamp=datetime.datetime.timestamp( t2 ), arbitration_id=ID, data=DATA, extended_id=False )
+                        SendQueue.put( msg, block=False )
+                except queue.Full:
+                    pass
         
     print( "CAN Bus simulation has exited normally." )
 
