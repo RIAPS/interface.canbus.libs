@@ -38,4 +38,5 @@
     --DATA = List of data bytes to send with the message ID.
     --FREQ = The frequency at which to publish the message.
     --IDLIST = Filter for received messages IDs that should be printed.
+    --MODE = Send(S), Receive(R), Both(SR)
 
