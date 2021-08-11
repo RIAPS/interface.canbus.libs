@@ -1,6 +1,6 @@
 import platform
 
-#code to color terminal text color
+# code to color terminal text color
 
 if platform.system().upper() == 'WINDOWS' :
     Red = "\033[38;2;255;0;0m"
