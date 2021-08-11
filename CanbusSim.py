@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf_8 -*-
 """
-Requires Modbus-tk 
+Requires Python-CAN 
 
-This slave implements the 4 main memory blocks of a Modbus device.
-
-Creates a local master to allow active update of some modbus parameters as needed 
 
 """
 from posixpath import join
