@@ -1,0 +1,32 @@
+---
+# BATT1, READ, CMD
+# BATT1, WRITE, CMD=Value
+BATT1: 
+   Description: BATTERY CHARGER
+   CAN:
+      Speed: 500000 
+      Port: can0
+   Interval: 5000
+   Neighbors: []
+   VoltageRegulateDG: 1
+   debugMode: False
+   ##### only READ commands are allowed to be used as polling functions ####
+   Event Messages:
+      BatteryVoltage:
+   Polled Values:
+      BatteryTemperature:
+
+###### NO input register for NEC BESS, all are holding registers ######
+
+###### READ/WRITE Commands - Holding registers #######
+   BatteryVoltage_READ:
+      info: Read battery voltage
+      ID: 0x043
+      DLEN: 6
+      output_value: 0
+      data_format: ">H"
+      Units:
+         - 1               # scaling factor 
+         - Volts           # units for returned value
+
+
