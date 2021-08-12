@@ -27,7 +27,7 @@ BATT1:
       data_format: ">H"    # data format ">" is big endian, "<" is little endian. f-float
       Units:
          - 1               # scaling factor 
-         - Volts           # units for returned value
+         - Volts           # units for data value
 
    BatteryTemperature:
       info: Read battery temperature
@@ -39,6 +39,6 @@ BATT1:
       data_format: ">H"    # data format ">" is big endian, "<" is little endian. f-float
       Units:
          - 1               # scaling factor 
-         - Celcius         # units for returned value
+         - Celcius         # units for data value
 
 
