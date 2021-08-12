@@ -10,23 +10,35 @@ BATT1:
    Neighbors: []
    VoltageRegulateDG: 1
    debugMode: False
-   ##### only READ commands are allowed to be used as polling functions ####
-   Event Messages:
+
+   Events:
       BatteryVoltage:
-   Polled Values:
+   Polled:
       BatteryTemperature:
 
-###### NO input register for NEC BESS, all are holding registers ######
-
 ###### READ/WRITE Commands - Holding registers #######
-   BatteryVoltage_READ:
+   BatteryVoltage:
       info: Read battery voltage
       ID: 0x043
-      DLEN: 6
+      ADDRTYPE: Standard   # May be 'Standard' or 'Extended'
+      MSGTYPE: Event       # May be 'Event' or 'Polled'
+      DLEN: 6              # Total length of the data being sent or received
       output_value: 0
       data_format: ">H"    # data format ">" is big endian, "<" is little endian. f-float
       Units:
          - 1               # scaling factor 
          - Volts           # units for returned value
+
+   BatteryTemperature:
+      info: Read battery temperature
+      ID: 0x044
+      ADDRTYPE: Standard   # May be 'Standard' or 'Extended'
+      MSGTYPE: Polled      # May be 'Event' or 'Polled'
+      DLEN: 6              # Total length of the data being sent or received
+      output_value: 0
+      data_format: ">H"    # data format ">" is big endian, "<" is little endian. f-float
+      Units:
+         - 1               # scaling factor 
+         - Celcius         # units for returned value
 
 
