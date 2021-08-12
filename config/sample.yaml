@@ -24,7 +24,7 @@ BATT1:
       ID: 0x043
       DLEN: 6
       output_value: 0
-      data_format: ">H"
+      data_format: ">H"    # data format ">" is big endian, "<" is little endian. f-float
       Units:
          - 1               # scaling factor 
          - Volts           # units for returned value
