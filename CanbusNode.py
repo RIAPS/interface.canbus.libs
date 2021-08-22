@@ -1,4 +1,6 @@
 import time
+
+from zmq.error import NotDone
 from CanbusSystemSettings import CanbusSystem
 import Terminal as TerminalColors
 import yaml
@@ -13,8 +15,13 @@ import time
 import datetime as dt
 
 
+def InitCanBus( dvc="can0", speed="500000" ) :
+    os.system( f"sudo /sbin/ip link set {dvc} up type can bitrate {speed}")    
+    return os.WEXITSTATUS()
+   
+
 class CanbusNode( threading.Thread ) :
-    def __init__(self, can_messages, logger ) :
+    def __init__(self, logger, can_messages, filters=None ) :
         threading.Thread.__init__( self )
         self.logger = logger
         self.can_messages = can_messages
@@ -22,9 +29,11 @@ class CanbusNode( threading.Thread ) :
         self.active.set()
         self.plug = None
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
+        # default filters only monitor messaages 0x001 and 0x002
+        self.filters = filters
 
         try:   
-            self.canbus = can.interface.Bus(channel='can0', bustype='socketcan_native' )
+            self.canbus = can.interface.Bus(channel='can0', bustype='socketcan_native', can_filters=self.filters )
         except OSError as oex :
             self.canbus = None
             self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")    
