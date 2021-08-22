@@ -1,6 +1,6 @@
 import time
-from libs.CanbusSystemSettings import CanbusSystem
-import libs.Terminal as TerminalColors
+from CanbusSystemSettings import CanbusSystem
+import Terminal as TerminalColors
 import yaml
 import spdlog
 import os
