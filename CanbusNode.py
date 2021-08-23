@@ -13,7 +13,7 @@ import time
 import datetime as dt
 
 class CanbusNode( threading.Thread ) :
-    def __init__(self, logger, canport, filters=None ) :
+    def __init__(self, logger, canport, dev="can0", filters=None ) :
         threading.Thread.__init__( self )
         self.logger = logger
         self.canport = canport
@@ -23,9 +23,10 @@ class CanbusNode( threading.Thread ) :
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
         self.filters = filters
         self.canbus = None
+        self.dev = dev
         
         try:   
-            self.canbus = can.interface.Bus(channel='can0', bustype='socketcan_native', can_filters=self.filters )
+            self.canbus = can.interface.Bus(channel=self.dev, bustype='socketcan_native', can_filters=self.filters )
             self.canbus.set_filters( filters=self.filters )
         except OSError as oex :
             self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")    
