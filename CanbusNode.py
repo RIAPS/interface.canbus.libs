@@ -26,11 +26,16 @@ class CanbusNode( threading.Thread ) :
         
         try:   
             self.canbus = can.interface.Bus(channel='can0', bustype='socketcan_native', can_filters=self.filters )
+            self.canbus.set_filters( filters=self.filters )
         except OSError as oex :
             self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")    
 
     def Deactivate(self):
         self.active.clear()
+
+    def updateFilters(self, newfilters=None ):
+        if self.canbus != None :
+            self.canbus.set_filters( filters=newfilters )
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Thread started{TerminalColors.RESET}" ) 
