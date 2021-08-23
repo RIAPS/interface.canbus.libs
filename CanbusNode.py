@@ -1,8 +1,6 @@
 import time
-
-from zmq.error import NotDone
-from CanbusSystemSettings import CanbusSystem
-import Terminal as TerminalColors
+from libs.CanbusSystemSettings import CanbusSystem
+import libs.Terminal as TerminalColors
 import yaml
 import spdlog
 import os
@@ -14,28 +12,21 @@ import zmq
 import time
 import datetime as dt
 
-
-def InitCanBus( dvc="can0", speed="500000" ) :
-    os.system( f"sudo /sbin/ip link set {dvc} up type can bitrate {speed}")    
-    return os.WEXITSTATUS()
-   
-
 class CanbusNode( threading.Thread ) :
-    def __init__(self, logger, can_messages, filters=None ) :
+    def __init__(self, logger, canport, filters=None ) :
         threading.Thread.__init__( self )
         self.logger = logger
-        self.can_messages = can_messages
+        self.canport = canport
         self.active = threading.Event()
         self.active.set()
         self.plug = None
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
-        # default filters only monitor messaages 0x001 and 0x002
         self.filters = filters
-
+        self.canbus = None
+        
         try:   
             self.canbus = can.interface.Bus(channel='can0', bustype='socketcan_native', can_filters=self.filters )
         except OSError as oex :
-            self.canbus = None
             self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")    
 
     def Deactivate(self):
@@ -43,14 +34,11 @@ class CanbusNode( threading.Thread ) :
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Thread started{TerminalColors.RESET}" ) 
-        self.plug = self.can_messages.setupPlug(self)
+        self.plug = self.canport.setupPlug(self)
         self.poller = zmq.Poller()
         self.poller.register( self.plug, zmq.POLLIN )
 
         while self.active.is_set() :
-            # socks = dict( self.poller.poll(1000) )
-            # if len(socks)>0 :
-            #     msg = self.plug.recv_pyobj()
             if self.canbus != None :
                 msg = self.canbus.recv( timeout=self.timeout )
             else:
