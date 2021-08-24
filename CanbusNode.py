@@ -48,12 +48,13 @@ class CanbusNode( threading.Thread ) :
             if self.canbus != None :
                 msg = self.canbus.recv( timeout=self.timeout )
             else:
+                time.sleep( self.timeou ) 
                 msg = can.Message(arbitration_id=0x001,
                                   data=[0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF ],
                                   timestamp=dt.datetime.timestamp( dt.datetime.now() ))
-                time.sleep(self.timeout)   
-                
-            self.plug.send_pyobj( msg )
+                  
+            if msg != None :    
+                self.plug.send_pyobj( msg )
 
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Thread stopped{TerminalColors.RESET}" ) 
 
