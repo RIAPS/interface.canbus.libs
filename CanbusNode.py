@@ -12,14 +12,14 @@ import zmq
 import time
 import datetime as dt
 
-def StartCANBus( self, dev, spd ):
-    self.logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
+def StartCANBus( dev, spd, logger ):
+    logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
     result = os.WEXITSTATUS( os.system( f"sudo ip link set {dev} up type can bitrate {spd}") )
     if result > 0 :
         if result == 2 :
-            self.logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
+            logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
         elif result == 1 :
-            self.logger.info( f"{TerminalColors.Red}CAN Bus device {dev} not found! Code=[{result}]{TerminalColors.RESET}" )
+            logger.info( f"{TerminalColors.Red}CAN Bus device {dev} not found! Code=[{result}]{TerminalColors.RESET}" )
         else:
             pass
     return result
