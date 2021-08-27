@@ -33,4 +33,14 @@ else:
     Black = ""
     RESET = ""
 
-
+def debugMessage( text, color="", logger=None  ) :
+    if logger != None :
+        if color == "" :
+            logger.info( f"{text}" )
+        else :
+            logger.info( f"{color}{text}{RESET}" )
+    else:
+        if color == "" :
+            print( f"{text}" )
+        else:
+            print( f"{color}{text}{RESET}" )
