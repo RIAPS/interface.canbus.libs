@@ -81,17 +81,16 @@ class CanbusNode( threading.Thread ) :
                 time.sleep( 1.0 )
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
              
-    def __destroy__(self):
-        self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__(){TerminalColors.RESET}" ) 
-        if self.command_thread != None and self.command_thread.is_alive() :
-            self.commands_active.clear()
-            self.command_thread.join( timeout=10.0 )
-            if self.command_thread.is_alive() :
-                self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode::command_exec() thread!{TerminalColors.RESET}" ) 
-        if self.is_alive() :
-            self.events_active.clear()
-            self.join( timeout=10.0 )
-            if self.is_alive() :
-                self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode:run() thread!{TerminalColors.RESET}" ) 
-
-        self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__ complete{TerminalColors.RESET}" ) 
+    # def __destroy__(self):
+    #     self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__(){TerminalColors.RESET}" ) 
+    #     if self.command_thread != None and self.command_thread.is_alive() :
+    #         self.commands_active.clear()
+    #         self.command_thread.join( timeout=10.0 )
+    #         if self.command_thread.is_alive() :
+    #             self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode::command_exec() thread!{TerminalColors.RESET}" ) 
+    #     if self.is_alive() :
+    #         self.events_active.clear()
+    #         self.join( timeout=10.0 )
+    #         if self.is_alive() :
+    #             self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode:run() thread!{TerminalColors.RESET}" ) 
+    #     self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__ complete{TerminalColors.RESET}" ) 
