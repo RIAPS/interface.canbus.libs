@@ -34,16 +34,18 @@ class CanbusNode( threading.Thread ) :
         self.commands_active = threading.Event()
         self.commands_active.set()
         self.plug = None
+        self.poller = None
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
         self.filters = filters
         self.canbus = None
         self.dev = dev
+        self.plug = self.canport.setupPlug(self)
+        self.poller = zmq.Poller()
+        self.poller.register( self.plug, zmq.POLLIN )
         self.command_thread = threading.Thread( target=self.command_exec )
         try:   
             self.canbus = can.interface.Bus(channel=self.dev, bustype='socketcan_native', can_filters=self.filters )
             self.canbus.set_filters( filters=self.filters )
-            self.command_thread = threading.Thread( target=self.command_exec )
-            self.command_thread.start()
         except OSError as oex :
             self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")    
 
@@ -57,9 +59,8 @@ class CanbusNode( threading.Thread ) :
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread started{TerminalColors.RESET}" ) 
-        self.plug = self.canport.setupPlug(self)
-        self.poller = zmq.Poller()
-        self.poller.register( self.plug, zmq.POLLIN )
+        
+        self.command_thread.start()
 
         if self.canbus != None :
             while self.events_active.is_set() :
@@ -76,21 +77,11 @@ class CanbusNode( threading.Thread ) :
 
     def command_exec(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread started{TerminalColors.RESET}" ) 
-        if self.canbus != None :
+        if self.canbus != None and self.poller != None :
             while self.commands_active.is_set() :
-                time.sleep( 1.0 )
+                s = dict( self.poller.poll( 1000.0 ) )
+                if len(s) > 0 :
+                    msg = self.plug.recv_pyobj()
+                    self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
              
-    # def __destroy__(self):
-    #     self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__(){TerminalColors.RESET}" ) 
-    #     if self.command_thread != None and self.command_thread.is_alive() :
-    #         self.commands_active.clear()
-    #         self.command_thread.join( timeout=10.0 )
-    #         if self.command_thread.is_alive() :
-    #             self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode::command_exec() thread!{TerminalColors.RESET}" ) 
-    #     if self.is_alive() :
-    #         self.events_active.clear()
-    #         self.join( timeout=10.0 )
-    #         if self.is_alive() :
-    #             self.logger.info( f"{TerminalColors.Red}Could not shutdown CanbusNode:run() thread!{TerminalColors.RESET}" ) 
-    #     self.logger.info( f"{TerminalColors.Yellow}CanbusNode::__destroy__ complete{TerminalColors.RESET}" ) 
