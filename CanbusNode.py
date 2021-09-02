@@ -38,7 +38,7 @@ class CanbusNode( threading.Thread ) :
         self.dev = dev
         self.canbus = None
         self.plug = None
-        self.event_thread = threading.Thread( target=self.event_listener )
+        self.event_thread = None
         try:   
             self.canbus = can.ThreadSafeBus(channel=self.dev, bustype='socketcan_native', can_filters=self.filters )
             self.canbus.set_filters( filters=self.filters )
@@ -58,7 +58,8 @@ class CanbusNode( threading.Thread ) :
         self.plug = self.canport.setupPlug(self)
         self.poller = zmq.Poller()
         self.poller.register( self.plug, zmq.POLLIN )
-    
+        
+        self.event_thread = threading.Thread( target=self.event_listener )
         self.event_thread.start()
 
         if self.canbus != None and self.poller != None :
