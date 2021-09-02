@@ -82,6 +82,7 @@ class CanbusNode( threading.Thread ) :
                 s = dict( self.poller.poll( 1000.0 ) )
                 if len(s) > 0 :
                     msg = self.plug.recv_pyobj()
+                    self.canbus.send( msg )
                     self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
              
