@@ -33,8 +33,6 @@ class CanbusNode( threading.Thread ) :
         self.events_active.set()
         self.commands_active = threading.Event()
         self.commands_active.set()
-        self.plug = None
-        self.poller = None
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
         self.filters = filters
         self.canbus = None
