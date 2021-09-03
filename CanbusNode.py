@@ -17,6 +17,8 @@ class CanbusControl( ) :
         self.spd = spd
         self.logger = logger
         self.cbus = None
+        self.event_thread = None
+        self.command_thread = None
         logger.info( f"{TerminalColors.Yellow}CanbusControl __init__ complete{TerminalColors.RESET}" )
 
     def CreateCANBus( self, startbus=True ):
@@ -38,6 +40,29 @@ class CanbusControl( ) :
                 self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
 
         return self.cbus
+    
+    def StartEventHandler(self, canport, filters=None):
+        self.event_thread = CanbusEventNode( self.logger, canport, filters  )                    
+        self.event_thread.start()
+
+    def StartCommandHandler(self, canport, filters=None):
+        self.command_thread = CanbusCommandNode( self.logger, canport, filters  )                    
+        self.command_thread.start()
+    
+    def Stop(self):
+        if self.event_thread != None :
+            self.event_thread.Deactivate()
+            self.event_thread.join(timeout=10.0)
+            if self.event_thread.is_alive() :
+                self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus event thread!{TerminalColors.RESET}" )
+        
+        if self.command_thread != None :
+            self.command_thread.Deactivate()
+            self.command_thread.join(timeout=10.0)
+            if self.command_thread.is_alive() :
+                self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
+
+
 
 class CanbusCommandNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus, filters=None ) :
