@@ -10,12 +10,17 @@ import queue
 import zmq
 import time
 import datetime as dt
+import spdlog
 
 class CanbusControl( ) :
-    def __init__(self, dev, spd, logger ) :
+    def __init__(self, dev="can0", spd="500000", logger=None ) :
         self.dev = dev
         self.spd = spd
-        self.logger = logger
+        if logger != None :
+            self.logger = logger
+        else:
+            self.logger = spdlog.ConsoleLogger( "CAN Lib" )
+
         self.cbus = None
         self.event_thread = None
         self.command_thread = None
