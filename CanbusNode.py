@@ -67,8 +67,6 @@ class CanbusControl( ) :
             if self.command_thread.is_alive() :
                 self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
 
-
-
 class CanbusCommandNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus, filters=None ) :
         threading.Thread.__init__( self )
@@ -82,6 +80,9 @@ class CanbusCommandNode( threading.Thread ) :
         if self.canbus != None :
             self.canbus.set_filters( filters=self.filters )
         self.plug = None
+
+    def get_plug( self ):
+        return self.plug
 
     def Deactivate(self):
         self.commands_active.clear()
@@ -102,7 +103,9 @@ class CanbusCommandNode( threading.Thread ) :
                 if len(s) > 0 :
                     msg = self.plug.recv_pyobj()
                     self.canbus.send( msg )
-                    self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
+                    # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
+
+
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
 
 
@@ -119,6 +122,9 @@ class CanbusEventNode( threading.Thread ) :
         if self.canbus != None :
             self.canbus.set_filters( filters=self.filters )
         self.plug = None
+
+    def get_plug( self ):
+        return self.plug
 
     def Deactivate(self):
         self.events_active.clear()
