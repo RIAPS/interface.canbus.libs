@@ -130,6 +130,8 @@ class CanbusEventNode( threading.Thread ) :
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread started{TerminalColors.RESET}" ) 
         self.plug = self.canport.setupPlug(self)
+        self.poller = zmq.Poller()
+        self.poller.register( self.plug, zmq.POLLIN )
         
         if self.canbus != None :
             while self.events_active.is_set() :
