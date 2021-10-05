@@ -10,15 +10,15 @@ def debug( logger, message, level=spdlog.LogLevel.CRITICAL, color=None ) :
     elif level == spdlog.LogLevel.WARN :
         if color == None:
             color = tc.Orange
-        logger.info( f"{tc.Purple}{message}{tc.RESET}" ) 
+        logger.warn( f"{tc.Purple}{message}{tc.RESET}" ) 
     elif level == spdlog.LogLevel.INFO :
         if color == None:
             color = tc.Green
-        logger.debug( f"{color}{message}{tc.RESET}" ) 
+        logger.info( f"{color}{message}{tc.RESET}" ) 
     elif level == spdlog.LogLevel.DEBUG :
         if color == None:
             color = tc.Cyan
-        logger.trace( f"{color}{message}{tc.RESET}" ) 
+        logger.debug( f"{color}{message}{tc.RESET}" ) 
     elif level == spdlog.LogLevel.TRACE :
         if color == None:
             color = tc.LightGray
