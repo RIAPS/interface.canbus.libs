@@ -1,4 +1,6 @@
 import time
+
+from zmq.sugar.context import T
 from libs.CanbusSystemSettings import CanbusSystem
 import libs.Terminal as TerminalColors
 import yaml
@@ -11,6 +13,8 @@ import zmq
 import time
 import datetime as dt
 import spdlog
+
+testq = queue.Queue()
 
 class CanbusControl( ) :
     def __init__(self, dev="can0", spd="500000", logger=None ) :
@@ -28,21 +32,21 @@ class CanbusControl( ) :
 
     def CreateCANBus( self, startbus=True ):
         result = 0
-        self.logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
-        if startbus :
-            result = os.WEXITSTATUS( os.system( f"sudo ip link set {self.dev} up type can bitrate {self.spd}") )
-            if result > 0 :
-                if result == 2 :
-                    self.logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
-                elif result == 1 :
-                    self.logger.info( f"{TerminalColors.Red}CAN Bus device {self.dev} not found! Code=[{result}]{TerminalColors.RESET}" )
-                else:
-                    pass
-        if result != 1 :
-            try:   
-                self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=None )
-            except OSError as oex :
-                self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
+        # self.logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
+        # if startbus :
+        #     result = os.WEXITSTATUS( os.system( f"sudo ip link set {self.dev} up type can bitrate {self.spd}") )
+        #     if result > 0 :
+        #         if result == 2 :
+        #             self.logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
+        #         elif result == 1 :
+        #             self.logger.info( f"{TerminalColors.Red}CAN Bus device {self.dev} not found! Code=[{result}]{TerminalColors.RESET}" )
+        #         else:
+        #             pass
+        # if result != 1 :
+        #     try:   
+        #         self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=None )
+        #     except OSError as oex :
+        #         self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
 
         return self.cbus
     
@@ -104,7 +108,12 @@ class CanbusCommandNode( threading.Thread ) :
                     msg = self.plug.recv_pyobj()
                     self.canbus.send( msg )
                     # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
-
+        else :
+            while self.commands_active.is_set() :
+                s = dict( self.poller.poll( 1000.0 ) )
+                if len(s) > 0 :
+                    msg = self.plug.recv_pyobj()
+                    testq.put( msg )
 
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
 
@@ -145,10 +154,12 @@ class CanbusEventNode( threading.Thread ) :
                 if msg != None :    
                     self.plug.send_pyobj( msg )
         else:
-            # send an error frame "ERROR=1"
-            msg = can.Message(  arbitration_id=0x000,
-                                data=[0x45, 0x52, 0x52, 0x4F, 0x52, 0x3D, 0x31, 0x00 ],
-                                timestamp=dt.datetime.timestamp( dt.datetime.now() ))
-            self.plug.send_pyobj( msg )
+            while self.events_active.is_set() :
+                try:
+                    msg = testq.get( block=True, timeout=1.0 )
+                    self.plug.send_pyobj( msg )
+                except queue.Empty:
+                    pass
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
+
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread stopped{TerminalColors.RESET}" ) 
