@@ -30,24 +30,27 @@ class CanbusControl( ) :
         self.command_thread = None
         logger.info( f"{TerminalColors.Yellow}CanbusControl __init__ complete{TerminalColors.RESET}" )
 
-    def CreateCANBus( self, startbus=True ):
+    def CreateCANBus( self, startbus=True, loopback=False ):
         result = 0
-        # self.logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
-        # if startbus :
-        #     result = os.WEXITSTATUS( os.system( f"sudo ip link set {self.dev} up type can bitrate {self.spd}") )
-        #     if result > 0 :
-        #         if result == 2 :
-        #             self.logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
-        #         elif result == 1 :
-        #             self.logger.info( f"{TerminalColors.Red}CAN Bus device {self.dev} not found! Code=[{result}]{TerminalColors.RESET}" )
-        #         else:
-        #             pass
-        # if result != 1 :
-        #     try:   
-        #         self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=None )
-        #     except OSError as oex :
-        #         self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
-
+        if not loopback :
+            self.logger.info( f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}" ) 
+            if startbus :
+                result = os.WEXITSTATUS( os.system( f"sudo ip link set {self.dev} up type can bitrate {self.spd}") )
+                if result > 0 :
+                    if result == 2 :
+                        self.logger.info( f"{TerminalColors.Yellow}CAN Bus already started. Code=[{result}]{TerminalColors.RESET}" )
+                    elif result == 1 :
+                        self.logger.info( f"{TerminalColors.Red}CAN Bus device {self.dev} not found! Code=[{result}]{TerminalColors.RESET}" )
+                    else:
+                        pass
+            if result != 1 :
+                try:   
+                    self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=None )
+                except OSError as oex :
+                    self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
+        else:
+            self.cbus = None
+            
         return self.cbus
     
     def StartEventHandler(self, canport, filters=None):
