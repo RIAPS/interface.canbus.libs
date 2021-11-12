@@ -15,9 +15,10 @@ import datetime as dt
 import spdlog
 
 testq = queue.Queue()
+hbq = queue.Queue()
 
 class CanbusControl( ) :
-    def __init__(self, dev="can0", spd="500000", logger=None ) :
+    def __init__(self, dev="can0", spd="500000", logger=None, filters=None ) :
         self.dev = dev
         self.spd = spd
         if logger != None :
@@ -25,9 +26,11 @@ class CanbusControl( ) :
         else:
             self.logger = spdlog.ConsoleLogger( "CAN Lib" )
 
+        self.filters = filters
         self.cbus = None
         self.event_thread = None
         self.command_thread = None
+        self.heartbeat_thread = None
         logger.info( f"{TerminalColors.Yellow}CanbusControl __init__ complete{TerminalColors.RESET}" )
 
     def CreateCANBus( self, startbus=True, loopback=False ):
@@ -45,14 +48,18 @@ class CanbusControl( ) :
                         pass
             if result != 1 :
                 try:   
-                    self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=None )
+                    self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=self.filters )
                 except OSError as oex :
                     self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
         else:
             self.cbus = None
             
         return self.cbus
-    
+
+    def UpdateFilters(self, newfilters=None ):
+        if self.cbus != None :
+            self.cbus.set_filters( filters=newfilters )
+
     def StartEventHandler(self, canport, filters=None):
         self.event_thread = CanbusEventNode( self.logger, canport, filters  )                    
         self.event_thread.start()
@@ -60,8 +67,18 @@ class CanbusControl( ) :
     def StartCommandHandler(self, canport, filters=None):
         self.command_thread = CanbusCommandNode( self.logger, canport, filters  )                    
         self.command_thread.start()
+
+    def StartHeartbeatHandler(self, hbmsg, frequency = 1.0 ):
+        self.CanbusHeartBeat = CanbusHeartBeat( self.logger, hbmsg, freq=frequency  )                    
+        self.CanbusHeartBeat.start()
     
     def Stop(self):
+        if self.CanbusHeartBeat != None :
+            self.CanbusHeartBeat.Deactivate()
+            self.CanbusHeartBeat.join(timeout=10.0)
+            if self.CanbusHeartBeat.is_alive() :
+                self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus heartbeat thread!{TerminalColors.RESET}" )
+
         if self.event_thread != None :
             self.event_thread.Deactivate()
             self.event_thread.join(timeout=10.0)
@@ -74,18 +91,51 @@ class CanbusControl( ) :
             if self.command_thread.is_alive() :
                 self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
 
+class CanbusHeartBeat( threading.thread ) :
+    def __init__( self, logger, hbmsg, freq=1.0 ) :
+        self.hbmsg = hbmsg
+        self.frequency = freq
+        self.heartbeat_active = threading.Event()
+        self.heartbeat_active.set()
+        self.heartbeat_skip = threading.Event()
+        self.heartbeat_skip.clear()
+
+    def Deactivate(self):
+        self.hearbeat_active.clear()
+
+    def hearbbeat_message(self, hbmsg ):
+        self.heartbeat_skip.set()
+        while self.hbmsg != None and self.heartbeat_active.is_set() :
+            pass
+
+        if self.heartbeat_active.is_set() :
+            self.hbmsg = hbmsg
+            self.heartbeat_skip.clear()
+
+    def run(self):
+        self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread started{TerminalColors.RESET}" ) 
+        sleep_time = 1.0 / self.frequency
+        while self.hearbeat_active.is_set() :
+            time.sleep( sleep_time )
+            if not self.heartbeat_skip.is_set() :
+                if len( hbq ) == 0 :
+                    hbq.put( self.hbmsg )
+                else:
+                    self.logger.info( f"{TerminalColors.Red}Heartbeat timing issue detected!{TerminalColors.RESET}" )
+            else :
+                self.hbmsg = None
+            
+    
+
 class CanbusCommandNode( threading.Thread ) :
-    def __init__(self, logger, canport, canbus, filters=None ) :
+    def __init__(self, logger, canport, canbus ) :
         threading.Thread.__init__( self )
         self.logger = logger
         self.canport = canport
         self.commands_active = threading.Event()
         self.commands_active.set()
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
-        self.filters = filters
         self.canbus = canbus
-        if self.canbus != None :
-            self.canbus.set_filters( filters=self.filters )
         self.plug = None
 
     def get_plug( self ):
@@ -93,10 +143,6 @@ class CanbusCommandNode( threading.Thread ) :
 
     def Deactivate(self):
         self.commands_active.clear()
-
-    def updateFilters(self, newfilters=None ):
-        if self.canbus != None :
-            self.canbus.set_filters( filters=newfilters )
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread started{TerminalColors.RESET}" ) 
@@ -122,17 +168,14 @@ class CanbusCommandNode( threading.Thread ) :
 
 
 class CanbusEventNode( threading.Thread ) :
-    def __init__(self, logger, canport, canbus, filters=None ) :
+    def __init__(self, logger, canport, canbus ) :
         threading.Thread.__init__( self )
         self.logger = logger
         self.canport = canport
         self.events_active = threading.Event()
         self.events_active.set()
         self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
-        self.filters = filters
         self.canbus = canbus
-        if self.canbus != None :
-            self.canbus.set_filters( filters=self.filters )
         self.plug = None
 
     def get_plug( self ):
@@ -140,10 +183,6 @@ class CanbusEventNode( threading.Thread ) :
 
     def Deactivate(self):
         self.events_active.clear()
-
-    def updateFilters(self, newfilters=None ):
-        if self.canbus != None :
-            self.canbus.set_filters( filters=newfilters )
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread started{TerminalColors.RESET}" ) 
