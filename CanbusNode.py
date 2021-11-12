@@ -92,25 +92,25 @@ class CanbusControl( ) :
                 self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
 
 class CanbusHeartBeat( threading.thread ) :
-    def __init__( self, logger, hbmsg, freq=1.0 ) :
+    def __init__( self, logger, canbus, hbmsg, freq=1.0 ) :
         self.hbmsg = hbmsg
         self.frequency = freq
+        self.canbus = canbus
         self.heartbeat_active = threading.Event()
         self.heartbeat_active.set()
         self.heartbeat_skip = threading.Event()
         self.heartbeat_skip.clear()
+        self.hearbeat_paused = False
 
     def Deactivate(self):
         self.hearbeat_active.clear()
 
     def hearbbeat_message(self, hbmsg ):
+        self.hearbeat_paused = True
         self.heartbeat_skip.set()
-        while self.hbmsg != None and self.heartbeat_active.is_set() :
-            pass
-
-        if self.heartbeat_active.is_set() :
-            self.hbmsg = hbmsg
-            self.heartbeat_skip.clear()
+        self.hbmsg = hbmsg
+        self.heartbeat_skip.clear()
+        self.hearbeat_paused = False
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread started{TerminalColors.RESET}" ) 
@@ -118,14 +118,12 @@ class CanbusHeartBeat( threading.thread ) :
         while self.hearbeat_active.is_set() :
             time.sleep( sleep_time )
             if not self.heartbeat_skip.is_set() :
-                if len( hbq ) == 0 :
-                    hbq.put( self.hbmsg )
-                else:
-                    self.logger.info( f"{TerminalColors.Red}Heartbeat timing issue detected!{TerminalColors.RESET}" )
-            else :
-                self.hbmsg = None
-            
-    
+                if self.hbmsg != None :
+                    self.canbus.send( self.hbmsg )
+                # if len( hbq ) == 0 :
+                #     hbq.put( self.hbmsg )
+                # else:
+                #     self.logger.info( f"{TerminalColors.Red}Heartbeat timing issue detected!{TerminalColors.RESET}" ) 
 
 class CanbusCommandNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus ) :
