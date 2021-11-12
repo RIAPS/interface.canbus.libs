@@ -91,8 +91,10 @@ class CanbusControl( ) :
             if self.command_thread.is_alive() :
                 self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
 
-class CanbusHeartBeat( threading.thread ) :
-    def __init__( self, logger, canbus, hbmsg, freq=1.0 ) :
+class CanbusHeartBeat( threading.Thread ) :
+    def __init__( self, logger, hbmsg, canbus, freq=1.0 ) :
+        threading.Thread.__init__( self )
+        self.logger = logger
         self.hbmsg = hbmsg
         self.frequency = freq
         self.canbus = canbus
@@ -101,9 +103,11 @@ class CanbusHeartBeat( threading.thread ) :
         self.heartbeat_skip = threading.Event()
         self.heartbeat_skip.clear()
         self.hearbeat_paused = False
-
+        self.logger.info( f"{TerminalColors.Yellow}Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
+        self.logger.info( f"{TerminalColors.Yellow}CanbusHeartBeat __init__ complete{TerminalColors.RESET}" )
+    
     def Deactivate(self):
-        self.hearbeat_active.clear()
+        self.heartbeat_active.clear()
 
     def hearbbeat_message(self, hbmsg ):
         self.hearbeat_paused = True
@@ -115,10 +119,11 @@ class CanbusHeartBeat( threading.thread ) :
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread started{TerminalColors.RESET}" ) 
         sleep_time = 1.0 / self.frequency
-        while self.hearbeat_active.is_set() :
+        while self.heartbeat_active.is_set() :
             time.sleep( sleep_time )
             if not self.heartbeat_skip.is_set() :
                 if self.hbmsg != None :
+                    self.logger.info( f"{TerminalColors.Purple}Heartbeat sent:{self.hbmsg}{TerminalColors.RESET}" ) 
                     self.canbus.send( self.hbmsg )
                 # if len( hbq ) == 0 :
                 #     hbq.put( self.hbmsg )
