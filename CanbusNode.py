@@ -102,33 +102,34 @@ class CanbusHeartBeat( threading.Thread ) :
         self.heartbeat_active.set()
         self.heartbeat_skip = threading.Event()
         self.heartbeat_skip.clear()
-        self.hearbeat_paused = False
-        self.logger.info( f"{TerminalColors.Yellow}Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
         self.logger.info( f"{TerminalColors.Yellow}CanbusHeartBeat __init__ complete{TerminalColors.RESET}" )
     
     def Deactivate(self):
         self.heartbeat_active.clear()
 
     def hearbbeat_message(self, hbmsg ):
-        self.hearbeat_paused = True
         self.heartbeat_skip.set()
         self.hbmsg = hbmsg
+        self.logger.info( f"{TerminalColors.Yellow}New Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
         self.heartbeat_skip.clear()
-        self.hearbeat_paused = False
 
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread started{TerminalColors.RESET}" ) 
+        self.logger.info( f"{TerminalColors.Yellow}Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
         sleep_time = 1.0 / self.frequency
-        while self.heartbeat_active.is_set() :
-            time.sleep( sleep_time )
-            if not self.heartbeat_skip.is_set() :
-                if self.hbmsg != None :
-                    self.logger.info( f"{TerminalColors.Purple}Heartbeat sent:{self.hbmsg}{TerminalColors.RESET}" ) 
-                    self.canbus.send( self.hbmsg )
-                # if len( hbq ) == 0 :
-                #     hbq.put( self.hbmsg )
-                # else:
-                #     self.logger.info( f"{TerminalColors.Red}Heartbeat timing issue detected!{TerminalColors.RESET}" ) 
+        if self.canbus != None :
+            self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
+            while self.heartbeat_active.is_set() :
+                time.sleep( sleep_time )
+                if not self.heartbeat_skip.is_set() :
+                    if self.hbmsg != None :
+                        self.canbus.send( self.hbmsg )
+        else :
+            self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
+            while self.heartbeat_active.is_set() :
+                time.sleep( sleep_time )
+
+        self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread stopped{TerminalColors.RESET}" ) 
 
 class CanbusCommandNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus ) :
@@ -154,6 +155,7 @@ class CanbusCommandNode( threading.Thread ) :
         self.poller.register( self.plug, zmq.POLLIN )
         
         if self.canbus != None :
+            self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
             while self.commands_active.is_set() :
                 s = dict( self.poller.poll( 1000.0 ) )
                 if len(s) > 0 :
@@ -161,6 +163,7 @@ class CanbusCommandNode( threading.Thread ) :
                     self.canbus.send( msg )
                     # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
         else :
+            self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.commands_active.is_set() :
                 s = dict( self.poller.poll( 1000.0 ) )
                 if len(s) > 0 :
@@ -192,19 +195,21 @@ class CanbusEventNode( threading.Thread ) :
         self.plug = self.canport.setupPlug(self)
         self.poller = zmq.Poller()
         self.poller.register( self.plug, zmq.POLLIN )
-        
+
+
         if self.canbus != None :
+            self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
             while self.events_active.is_set() :
                 msg = self.canbus.recv( timeout=self.timeout )
                 if msg != None :    
                     self.plug.send_pyobj( msg )
         else:
+            self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.events_active.is_set() :
                 try:
                     msg = testq.get( block=True, timeout=1.0 )
                     self.plug.send_pyobj( msg )
                 except queue.Empty:
                     pass
-            self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
 
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread stopped{TerminalColors.RESET}" ) 
