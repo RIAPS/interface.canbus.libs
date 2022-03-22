@@ -141,6 +141,24 @@ The contents are shown below
     #  s        string               string            max 8 bytes
 
 
+##### CAN bus message format
+
+      message
+      (
+         timestamp,                  
+         arbitration_id,             
+         is_extended_id,             
+         is_remote_frame,            
+         is_error_frame,             
+         channel,                    
+         dlc,                        
+         data,                       
+         is_fd,                      
+         bitrate_switch,             
+         error_state_indicator
+      )
+
+      THe CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiveing the message the       
 
         
 
