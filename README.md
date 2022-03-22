@@ -158,7 +158,11 @@ The contents are shown below
          error_state_indicator
       )
 
-The CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiving the message
+The message structure is found in the python-can project, located here:
+https://github.com/hardbyte/python-can
+
+
+During normal operation, the CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiving the message
 the driver then posts the message as an EVENT or ANSWER-to-QUERY.   
 
 A simplistic diagram of just the driver is shown in the following link:
@@ -167,5 +171,93 @@ https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png
 
 
 
+The sample CANApp is defined as follows:
+
+https://github.com/RIAPS/interface.canbus.apps/blob/main/CANApp/CANApp.riaps
+
+        app CANApp
+        {
+	        message CANQry;
+	        message CANAns;
+	        message CmdQry;
+	        message CmdAns;
+	        message CANCommands;
+	        message CANEvents;
+	        message CANControl;
+	        message LogMessages;
+	        message CmdMessages;
+	        message CmdEvents;
+	        message CfgSignal;
+
+	        library cfg;
+	        library libs;
+	        library res;
+
+	        component DataLogger()
+	        {
+      	        sub data_logging_sub : LogMessages;			// Receive logging messages		
+      	        sub config_signal_sub : CfgSignal;	
+	        }
+		
+	        component Commander()
+	        scheduler priority;
+	        {
+		        qry cmdqryans: (CmdQry, CmdAns) timed;
+      	        pub data_logging_pub : LogMessages;			// publish logging messages	
+      	        pub command_injector_pub : CmdMessages;		// Send cmd receive test commands	
+      	        sub config_signal_sub : CfgSignal;	
+		        sub cmd_events_sub : CmdEvents;
+		        timer cmdtimer 5000;
+	        }	
+	
+	        // component
+            component Scanner() 
+	        scheduler priority;
+            {
+		        ans cmdqryans: (CmdQry, CmdAns) timed;
+		        qry canbusqryans: (CANQry, CANAns) timed;
+      	        sub event_can_sub : CANEvents ;				// subscribe port for CAN events
+      	        sub command_injector_sub : CmdMessages;		
+      	        pub command_can_pub : CANCommands ;			// publish port for CAN commands
+      	        pub data_logging_pub : LogMessages;			// publish logging messages		
+      	        pub config_signal_pub : CfgSignal;
+		        pub cmd_events_pub : CmdEvents;
+		        timer oneshot 2500;
+		        timer periodic 5000;
+            }
+	
+            device Driver(config) 
+            {
+    	        inside canport;
+    	        timer timeout 1000;
+       	        sub command_can_sub : CANCommands ;			// subscribe port for CAN commands
+      	        pub event_can_pub : CANEvents ;				// Publish port for CAN events
+		        ans canbusqryans: (CANQry, CANAns) timed;
+            }
+	
+	        actor CANBus(config) 
+	        {
+		        local CANCommands, CANEvents, CANControl, CANQry, CANAns;
+		        { 
+			        scanner : Scanner();
+			        driver  : Driver(config=config);
+		        }
+	        }
+	
+	        actor CANLogger()
+	        {
+		        {
+			        can_logger : DataLogger();
+		        }
+	        }	
+	
+	        actor Injector()
+	        {
+		        {
+			        Injector : Commander();
+		        }
+	        }	
+	
+        }
         
 
