@@ -158,7 +158,14 @@ The contents are shown below
          error_state_indicator
       )
 
-      THe CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiveing the message the       
+The CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiving the message
+the driver then posts the message as an EVENT or ANSWER-to-QUERY.   
+
+A simplistic diagram of just the driver is shown in the following link:
+
+https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png   
+
+
 
         
 
