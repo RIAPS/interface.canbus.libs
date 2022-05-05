@@ -48,7 +48,7 @@ class CanbusControl( ) :
                         pass
             if result != 1 :
                 try:   
-                    self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan_native', can_filters=self.filters )
+                    self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan', can_filters=self.filters )
                 except OSError as oex :
                     self.logger.info( f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}" ) 
         else:
