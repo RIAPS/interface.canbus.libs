@@ -1,4 +1,4 @@
-import canlibs.Terminal as tc
+import canbuslibs.Terminal as tc
 import spdlog
 
 

@@ -1,6 +1,6 @@
 import time
-from canlibs.CanbusSystemSettings import CanbusSystem
-import canlibs.Terminal as TerminalColors
+from canbuslibs.CanbusSystemSettings import CanbusSystem
+import canbuslibs.Terminal as TerminalColors
 import yaml
 import os
 import struct
