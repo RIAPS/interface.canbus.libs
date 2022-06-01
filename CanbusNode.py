@@ -1,8 +1,6 @@
 import time
-
-from zmq.sugar.context import T
-from libs.CanbusSystemSettings import CanbusSystem
-import libs.Terminal as TerminalColors
+from canlibs.CanbusSystemSettings import CanbusSystem
+import canlibs.Terminal as TerminalColors
 import yaml
 import os
 import struct

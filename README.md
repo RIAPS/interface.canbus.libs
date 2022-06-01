@@ -190,7 +190,7 @@ https://github.com/RIAPS/interface.canbus.apps/blob/main/CANApp/CANApp.riaps
 	        message CfgSignal;
 
 	        library cfg;
-	        library libs;
+	        library canlibs;
 	        library res;
 
 	        component DataLogger()
