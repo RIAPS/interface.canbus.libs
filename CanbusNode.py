@@ -1,22 +1,28 @@
 import time
-from canbuslibs.CanbusSystemSettings import CanbusSystem
+import canbuslibs.CanbusSystemSettings as CanSys
 import canbuslibs.Terminal as TerminalColors
-import yaml
 import os
-import struct
 import can
 import threading
 import queue
 import zmq
 import time
-import datetime as dt
 import spdlog
 
 testq = queue.Queue()
 hbq = queue.Queue()
+candev = "can0"
+
+def ResetBus(logger):
+    os.WEXITSTATUS( os.system( f"sudo ifconfig {candev} down") )
+    result = os.WEXITSTATUS( os.system( f"sudo ifconfig {candev} up") )
+    logger.info( f"{TerminalColors.Red}Reset can bus operation returned: {result}{TerminalColors.RESET}" )
+
+
 
 class CanbusControl( ) :
     def __init__(self, dev="can0", spd="500000", logger=None, filters=None ) :
+        candev = dev
         self.dev = dev
         self.spd = spd
         if logger != None :
@@ -121,7 +127,11 @@ class CanbusHeartBeat( threading.Thread ) :
                 time.sleep( sleep_time )
                 if not self.heartbeat_skip.is_set() :
                     if self.hbmsg != None :
-                        self.canbus.send( self.hbmsg )
+                        try:
+                            self.canbus.send( self.hbmsg )
+                        except can.CanOperationError as ex :
+                            ResetBus(self.logger)
+                            self.logger.info( f"{TerminalColors.Red}Heartbeat thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
         else :
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.heartbeat_active.is_set() :
@@ -136,7 +146,7 @@ class CanbusCommandNode( threading.Thread ) :
         self.canport = canport
         self.commands_active = threading.Event()
         self.commands_active.set()
-        self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
+        self.timeout = (float(CanSys.CanbusSystem.Timeouts.Comm)/1000.0)
         self.canbus = canbus
         self.plug = None
 
@@ -158,8 +168,13 @@ class CanbusCommandNode( threading.Thread ) :
                 s = dict( self.poller.poll( 1000.0 ) )
                 if len(s) > 0 :
                     msg = self.plug.recv_pyobj()
-                    self.canbus.send( msg )
-                    # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
+                    try:
+                        self.canbus.send( msg )
+                        # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
+                    except can.CanOperationError as ex :
+                        ResetBus(self.logger)
+                        self.logger.info( f"{TerminalColors.Red}Command Thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
+                    
         else :
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.commands_active.is_set() :
@@ -178,7 +193,7 @@ class CanbusEventNode( threading.Thread ) :
         self.canport = canport
         self.events_active = threading.Event()
         self.events_active.set()
-        self.timeout = (float(CanbusSystem.Timeouts.Comm)/1000.0)
+        self.timeout = (float(CanSys.CanbusSystem.Timeouts.Comm)/1000.0)
         self.canbus = canbus
         self.plug = None
 
@@ -194,13 +209,15 @@ class CanbusEventNode( threading.Thread ) :
         self.poller = zmq.Poller()
         self.poller.register( self.plug, zmq.POLLIN )
 
-
         if self.canbus != None :
             self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
             while self.events_active.is_set() :
-                msg = self.canbus.recv( timeout=self.timeout )
-                if msg != None :    
-                    self.plug.send_pyobj( msg )
+                try:
+                    msg = self.canbus.recv( timeout=self.timeout )
+                    if msg != None :    
+                        self.plug.send_pyobj( msg )
+                except can.CanOperationError as ex:
+                    self.logger.info( f"{TerminalColors.Red}Event Thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
         else:
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.events_active.is_set() :
