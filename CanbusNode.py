@@ -130,7 +130,8 @@ class CanbusHeartBeat( threading.Thread ) :
                         try:
                             self.canbus.send( self.hbmsg )
                         except can.CanOperationError as ex :
-                            ResetBus(self.logger)
+                            # ResetBus(self.logger)
+                            self.canbus.flush_tx_buffer()
                             self.logger.info( f"{TerminalColors.Red}Heartbeat thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
         else :
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
@@ -172,7 +173,8 @@ class CanbusCommandNode( threading.Thread ) :
                         self.canbus.send( msg )
                         # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
                     except can.CanOperationError as ex :
-                        ResetBus(self.logger)
+                        # ResetBus(self.logger)
+                        self.canbus.flush_tx_buffer()
                         self.logger.info( f"{TerminalColors.Red}Command Thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
                     
         else :
