@@ -19,7 +19,7 @@ def ResetBus(logger):
     logger.info( f"{TerminalColors.Red}Reset can bus operation returned: {result}{TerminalColors.RESET}" )
 
 
-
+# starts all the canbus threads and creates the canbus interface
 class CanbusControl( ) :
     def __init__(self, dev="can0", spd="500000", logger=None, filters=None ) :
         candev = dev
@@ -30,13 +30,21 @@ class CanbusControl( ) :
         else:
             self.logger = spdlog.ConsoleLogger( "CAN Lib" )
 
+        # the list of CAN bus ids the application interested in
         self.filters = filters
+        # CAN bus object that handles the data transmission
         self.cbus = None
+        # event thread that receives asynchronus CAN messages
         self.event_thread = None
+        # command thread tha transmits RIAPS generated commands
         self.command_thread = None
+        # thread the periodically transmits a heartbeat or keep alive message
+        # this thread is option if not configure in the YAML file
         self.heartbeat_thread = None
         logger.info( f"{TerminalColors.Yellow}CanbusControl __init__ complete{TerminalColors.RESET}" )
 
+    # Starts the Linux CAN bus interface using the desired device and speed
+    # create the CAN bus object for bus interface
     def CreateCANBus( self, startbus=True, loopback=False ):
         result = 0
         if not loopback :
@@ -50,6 +58,7 @@ class CanbusControl( ) :
                         self.logger.info( f"{TerminalColors.Red}CAN Bus device {self.dev} not found! Code=[{result}]{TerminalColors.RESET}" )
                     else:
                         pass
+            # if the bus is started then create the CAN bus 
             if result != 1 :
                 try:   
                     self.cbus = can.ThreadSafeBus( channel=self.dev, bustype='socketcan', can_filters=self.filters )
@@ -60,22 +69,27 @@ class CanbusControl( ) :
             
         return self.cbus
 
+    # update the filter list
     def UpdateFilters(self, newfilters=None ):
         if self.cbus != None :
             self.cbus.set_filters( filters=newfilters )
 
+    # creates and starts the canbus event handler thread
     def StartEventHandler(self, canport, filters=None):
         self.event_thread = CanbusEventNode( self.logger, canport, filters  )                    
         self.event_thread.start()
 
+    # creates and starts the canbus command thread
     def StartCommandHandler(self, canport, filters=None):
         self.command_thread = CanbusCommandNode( self.logger, canport, filters  )                    
         self.command_thread.start()
 
+    # creates and starts the canbus heartbeat thread
     def StartHeartbeatHandler(self, hbmsg, frequency = 1.0 ):
         self.CanbusHeartBeat = CanbusHeartBeat( self.logger, hbmsg, freq=frequency  )                    
         self.CanbusHeartBeat.start()
     
+    # stops all running canbus threads
     def Stop(self):
         if self.CanbusHeartBeat != None :
             self.CanbusHeartBeat.Deactivate()
@@ -95,6 +109,7 @@ class CanbusControl( ) :
             if self.command_thread.is_alive() :
                 self.logger.info( f"{TerminalColors.Red}Failed to terminate CAN bus command thread!{TerminalColors.RESET}" )
 
+# Thread object that encapsulates the heartbeat functionality
 class CanbusHeartBeat( threading.Thread ) :
     def __init__( self, logger, hbmsg, canbus, freq=1.0 ) :
         threading.Thread.__init__( self )
@@ -108,15 +123,18 @@ class CanbusHeartBeat( threading.Thread ) :
         self.heartbeat_skip.clear()
         self.logger.info( f"{TerminalColors.Yellow}CanbusHeartBeat __init__ complete{TerminalColors.RESET}" )
     
+    # allows the run run() loop to exit
     def Deactivate(self):
         self.heartbeat_active.clear()
 
+    # sets a new heartbeat nessage that is transmitted on the canbus
     def hearbbeat_message(self, hbmsg ):
         self.heartbeat_skip.set()
         self.hbmsg = hbmsg
         self.logger.info( f"{TerminalColors.Yellow}New Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
         self.heartbeat_skip.clear()
 
+    # work loop for the heartbeat thread
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread started{TerminalColors.RESET}" ) 
         self.logger.info( f"{TerminalColors.Yellow}Heartbeat message:{self.hbmsg}{TerminalColors.RESET}" )
@@ -124,16 +142,20 @@ class CanbusHeartBeat( threading.Thread ) :
         if self.canbus != None :
             self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
             while self.heartbeat_active.is_set() :
+                # sleep for the time requested in the YAML configuration
                 time.sleep( sleep_time )
+                # send the heartbeat if not actively skipping
                 if not self.heartbeat_skip.is_set() :
                     if self.hbmsg != None :
                         try:
                             self.canbus.send( self.hbmsg )
                         except can.CanOperationError as ex :
                             # ResetBus(self.logger)
+                            # recover if the event the xmit buffer becomes full
                             self.canbus.flush_tx_buffer()
                             self.logger.info( f"{TerminalColors.Red}Heartbeat thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
         else :
+            # do nothing since the canbus object is not valid
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.heartbeat_active.is_set() :
                 time.sleep( sleep_time )
