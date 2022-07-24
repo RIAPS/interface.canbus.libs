@@ -45,6 +45,8 @@ class CanbusControl( ) :
 
     # Starts the Linux CAN bus interface using the desired device and speed
     # create the CAN bus object for bus interface
+    # if startbus == True the function attempts to start the Linux canbus device
+    # if loopback == True the canbus is not used and the internal queue is used for testing
     def CreateCANBus( self, startbus=True, loopback=False ):
         result = 0
         if not loopback :
@@ -162,6 +164,8 @@ class CanbusHeartBeat( threading.Thread ) :
 
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Heartbeat Thread stopped{TerminalColors.RESET}" ) 
 
+# Thread object that encapsulates the Command handling operation for RIAPS commands sent
+# out on the canbus
 class CanbusCommandNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus ) :
         threading.Thread.__init__( self )
@@ -173,12 +177,15 @@ class CanbusCommandNode( threading.Thread ) :
         self.canbus = canbus
         self.plug = None
 
+    # the plug used to communicate with the RIAPS device
     def get_plug( self ):
         return self.plug
 
+    # deactives the command thread and allows the run() function to exit
     def Deactivate(self):
         self.commands_active.clear()
 
+    # thread work function
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread started{TerminalColors.RESET}" ) 
         self.plug = self.canport.setupPlug(self)
@@ -196,10 +203,11 @@ class CanbusCommandNode( threading.Thread ) :
                         # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
                     except can.CanOperationError as ex :
                         # ResetBus(self.logger)
+                        # allow the system to recover in the event of a xmit buffer full error
                         self.canbus.flush_tx_buffer()
                         self.logger.info( f"{TerminalColors.Red}Command Thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
                     
-        else :
+        else : # no canbus so just post commands to the test queue
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.commands_active.is_set() :
                 s = dict( self.poller.poll( 1000.0 ) )
@@ -209,7 +217,11 @@ class CanbusCommandNode( threading.Thread ) :
 
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Command Thread stopped{TerminalColors.RESET}" ) 
 
-
+# Thread object that encapsulates functionality to post canbus received
+# message events to RIAPS
+# canbus is the canbus access object
+# canport id the RIAPS port used to communicate to the RAIPS device
+# logger is the RIAPS logger
 class CanbusEventNode( threading.Thread ) :
     def __init__(self, logger, canport, canbus ) :
         threading.Thread.__init__( self )
@@ -221,19 +233,22 @@ class CanbusEventNode( threading.Thread ) :
         self.canbus = canbus
         self.plug = None
 
+    # returns the RIAPS device plug
     def get_plug( self ):
         return self.plug
 
+    # deactives the event thread and allows the run() function to exit
     def Deactivate(self):
         self.events_active.clear()
 
+    # thread work function
     def run(self):
         self.logger.info( f"{TerminalColors.Yellow}CAN Bus Event Thread started{TerminalColors.RESET}" ) 
         self.plug = self.canport.setupPlug(self)
         self.poller = zmq.Poller()
         self.poller.register( self.plug, zmq.POLLIN )
 
-        if self.canbus != None :
+        if self.canbus != None : # canbus communication is present and ready for messages
             self.logger.info( f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}" )
             while self.events_active.is_set() :
                 try:
@@ -242,10 +257,11 @@ class CanbusEventNode( threading.Thread ) :
                         self.plug.send_pyobj( msg )
                 except can.CanOperationError as ex:
                     self.logger.info( f"{TerminalColors.Red}Event Thread->CAN Bus Error: {ex}.{TerminalColors.RESET}" )
-        else:
+        else: # no canbus object is available
             self.logger.info( f"{TerminalColors.Red}CAN Bus not available!{TerminalColors.RESET}" )
             while self.events_active.is_set() :
                 try:
+                    # see if a loopback message is posted and just send it back to RIAPS
                     msg = testq.get( block=True, timeout=1.0 )
                     self.plug.send_pyobj( msg )
                 except queue.Empty:
