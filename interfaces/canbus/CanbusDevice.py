@@ -8,9 +8,9 @@ import time
 import yaml
 
 from riaps.run.comp import Component
-from canbus.libs.CanbusNode import CanbusEventNode, CanbusCommandNode, CanbusControl, CanbusHeartBeat
-from canbus.libs.Debug import debug
-import canbus.libs.Terminal as tc
+from interfaces.canbus.libs.CanbusNode import CanbusEventNode, CanbusCommandNode, CanbusControl, CanbusHeartBeat
+from interfaces.canbus.libs.Debug import debug
+import interfaces.canbus.libs.Terminal as tc
 
 
 # riaps:keep_import:end
