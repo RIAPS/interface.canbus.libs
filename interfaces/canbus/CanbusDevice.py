@@ -21,9 +21,9 @@ class Driver(Component):
     def __init__(self, config):
         super(Driver, self).__init__()
         debug(self.logger, f"Configuration file:{config}", level=3)
-        self.can_event_thread = None
-        self.can_command_thread = None
-        self.can_heartbeat_thread = None
+        self.threads = {"event": None,
+                        "command": None,
+                        "heartbeat": None}
         self.can_node_cfg = None
         self.cannodename = None
         self.filters = None
@@ -160,31 +160,20 @@ class Driver(Component):
     # riaps:keep_timeout:end
 
     # riaps:keep_impl:begin
+
     def __destroy__(self):
-        if self.can_heartbeat_thread is not None:
-            self.can_heartbeat_thread.Deactivate()
-            debug(self.logger, f"Deactivaiting hearbeat thread...", level=spdlog.LogLevel.TRACE, color=tc.Yellow)
-        if self.can_event_thread is not None:
-            self.can_event_thread.Deactivate()
-            debug(self.logger, f"Deactivaiting event thread...", level=spdlog.LogLevel.TRACE, color=tc.Yellow)
-        if self.can_command_thread is not None:
-            self.can_command_thread.Deactivate()
-            debug(self.logger, f"Deactivaiting command thread...", level=spdlog.LogLevel.TRACE, color=tc.Yellow)
 
-        if self.can_heartbeat_thread.is_alive():
-            self.can_heartbeat_thread.join(timeout=10.0)
-            if self.can_heartbeat_thread.is_alive():
-                debug(self.logger, f"Failed to terminate CAN bus hearbeat thread!", level=spdlog.LogLevel.CRITICAL)
+        for name in self.threads:
+            t = self.threads[name]
+            if t is not None:
+                t.Deactivate()
+                debug(self.logger, f"Deactivating {name} thread...", level=spdlog.LogLevel.TRACE, color=tc.Yellow)
 
-        if self.can_event_thread.is_alive():
-            self.can_event_thread.join(timeout=10.0)
-            if self.can_event_thread.is_alive():
-                debug(self.logger, f"Failed to terminate CAN bus event thread!", level=spdlog.LogLevel.CRITICAL)
-
-        if self.can_command_thread.is_alive():
-            self.can_command_thread.join(timeout=10.0)
-            if self.can_command_thread.is_alive():
-                debug(self.logger, f"Failed to terminate CAN bus command thread!", level=spdlog.LogLevel.CRITICAL)
+        for name in self.threads:
+            t = self.threads[name]
+            t.join(timeout=10)
+            if t.is_alive():
+                debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
 
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
@@ -195,8 +184,8 @@ class Driver(Component):
 
         if cbus is not None:
             # start the canbus threads
-            self.can_event_thread = CanbusEventNode(self.logger, self.canport, cbus)
-            self.can_command_thread = CanbusCommandNode(self.logger, self.canport, cbus)
+            self.threads["event"] = CanbusEventNode(self.logger, self.canport, cbus)
+            self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
             # see if a heartbeat is configured
             if "Heartbeat" in self.can_node_cfg.keys():
                 hbparm = self.can_node_cfg["Heartbeat"]
@@ -214,19 +203,19 @@ class Driver(Component):
                                           is_remote_frame=rtr,
                                           is_extended_id=ext)
 
-                self.can_heartbeat_thread = CanbusHeartBeat(self.logger, self.hb_msg, cbus, freq)
-                self.can_heartbeat_thread.start()
+                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, self.hb_msg, cbus, freq)
+                self.threads["heartbeat"].start()
             else:
                 debug(self.logger, f"No heartbeat message configured, heartbeat was thread not created.",
                       level=spdlog.LogLevel.WARN)
 
-            self.can_event_thread.start()
-            self.can_command_thread.start()
+            self.threads["event"].start()
+            self.threads["command"].start()
             # delay to let the threads start an configure the comm plugs
             done = False
             while not done:
-                self.cmdplug = self.can_command_thread.get_plug()
-                self.evtplug = self.can_event_thread.get_plug()
+                self.cmdplug = self.threads["command"].get_plug()
+                self.evtplug = self.threads["event"].get_plug()
                 if self.cmdplug is None or self.evtplug is None:
                     time.sleep(0.100)
                 else:
