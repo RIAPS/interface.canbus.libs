@@ -1,6 +1,6 @@
 import spdlog
 
-import canbus.libs.Terminal as tc
+from . import Terminal as tc
 
 
 def debug(logger, message, level=spdlog.LogLevel.CRITICAL, color=None):

@@ -1,6 +1,6 @@
-from interfaces.canbus import CanbusDevice
+from interfaces.canbus.CanbusDevice import Driver as CanbusDeviceDriver
 
 
-class Driver(CanbusDevice):
+class Driver(CanbusDeviceDriver):
     def __init__(self, config):
         super().__init__(config)
