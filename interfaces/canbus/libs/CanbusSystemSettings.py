@@ -1,6 +1,8 @@
 # define any bus setup constants for the Modbus communication here
 
 class CanbusSystem:
+    class Config:
+        candev = "can0"  # device name from ip link | grep can
     class Timeouts:
         Comm = 2000      # milliseconds
         RetriesTCP = -1        

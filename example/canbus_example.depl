@@ -1,0 +1,8 @@
+app CanbusExample {
+
+     host all {
+        network 172.21.20.70; //IP address of riaps_app_log_server
+    }
+
+	on (172.21.20.40) CANDriver(mqtt_config="interfaces/cfg/mqtt.yaml");
+}

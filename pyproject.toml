@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools ~= 65.0"]
+
+[project]
+name = "canbuslibs"
+version = "0.0.1"
+authors = [
+  { name="RIAPS", email="https://riaps.isis.vanderbilt.edu"},
+]
+description = "A riaps interface library for Canbus"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Linux",
+]
+dependencies = [
+    "python-can"
+]
+
+[project.urls]
+"Homepage" = "hhttps://github.com/RIAPS/interface.canbus.libs"
+"Bug Tracker" = "https://github.com/RIAPS/interface.canbus.libs/issues"
