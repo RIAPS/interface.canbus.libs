@@ -1,6 +1,6 @@
 import time
-import CanbusSystemSettings as CanSys
-import Terminal as TerminalColors
+from . import CanbusSystemSettings as CanSys
+from . import Terminal as TerminalColors
 import os
 import can
 import threading
