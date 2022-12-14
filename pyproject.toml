@@ -1,11 +1,15 @@
 [build-system]
 requires = ["setuptools ~= 65.0"]
 
+[tool.setuptools]
+packages = ["interfaces"]
+
+
 [project]
 name = "canbuslibs"
 version = "0.0.1"
 authors = [
-  { name="RIAPS", email="https://riaps.isis.vanderbilt.edu"},
+  { name="RIAPS"},
 ]
 description = "A riaps interface library for Canbus"
 readme = "README.md"
