@@ -171,9 +171,10 @@ class Driver(Component):
 
         for name in self.threads:
             t = self.threads[name]
-            t.join(timeout=10)
-            if t.is_alive():
-                debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
+            if t is not None:
+                t.join(timeout=10)
+                if t.is_alive():
+                    debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
 
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
