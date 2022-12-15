@@ -49,11 +49,12 @@ class Driver(Component):
                     self.cfg = yaml.safe_load(cfg)
             else:
                 self.cfg = None
-                debug(self.logger, f"Configuration file does not exist:{config}", level=spdlog.LogLevel.CRITICAL)
         except OSError:
             debug(self.logger, f"File I/O error:{config}", level=spdlog.LogLevel.CRITICAL)
 
-        if self.cfg is not None:
+        if self.cfg is None:
+            debug(self.logger, f"Configuration failed. Configuration file does not exist:{config}", level=spdlog.LogLevel.CRITICAL)
+        elif self.cfg is not None:
             keys = list(self.cfg.keys())
             self.cannodename = keys[0]
             self.can_node_cfg = self.cfg[self.cannodename]
@@ -93,7 +94,7 @@ class Driver(Component):
                 debug(self.logger, f"Filter {f}=0x{hex(mask)[2:].zfill(3)}, 0x{hex(mid)[2:].zfill(3)}, {ext}",
                       level=spdlog.LogLevel.TRACE)
 
-        debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
+            debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
     # riaps:keep_constr:end
 
@@ -180,6 +181,14 @@ class Driver(Component):
 
     def handleActivate(self):
         self.timeout.halt()
+
+        if not self.can_node_cfg:
+            debug(self.logger,
+                  f"Cannot activate. "
+                  f"self.can_node_cfg is {self.can_node_cfg}",
+                  level=spdlog.LogLevel.CRITICAL)
+            return
+
         self.cancontrol = CanbusControl(dev=self.candev, spd=self.canspeed, logger=self.logger, filters=self.filterlist)
         cbus = self.cancontrol.CreateCANBus()
 
@@ -224,10 +233,10 @@ class Driver(Component):
                     # signal components that threads and connections are in active
             value = ("config", [self.can_node_cfg, ])
             self.event_can_pub.send_pyobj(value)
+            debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
         else:
             debug(self.logger, f"Error in CAN bus configuration", level=spdlog.LogLevel.CRITICAL)
 
-        debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
 
     def get_bus_setup(self):
         return self.bus_setup
