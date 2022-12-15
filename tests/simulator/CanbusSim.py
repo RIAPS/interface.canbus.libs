@@ -9,8 +9,8 @@ from posixpath import join
 import can
 from can import bus
 from can import message
-from canbuslibs.CanbusSystemSettings import CanbusSystem
-import canbuslibs.Terminal as TerminalColors
+from interfaces.canbus.libs.CanbusSystemSettings import CanbusSystem
+import interfaces.canbus.libs.Terminal as TerminalColors
 import sys
 import select
 import time
