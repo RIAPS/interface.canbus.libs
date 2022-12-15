@@ -1,9 +1,15 @@
 [build-system]
-requires = ["setuptools ~= 65.0", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+requires = ["setuptools ~= 65.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["interfaces"]
+#[tool.setuptools]
+#packages = ["interfaces"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["interfaces*"]
+#exclude = ["etc*", "riaps*"]
+#namespaces = false
 
 
 [project]
