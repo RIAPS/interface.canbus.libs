@@ -124,7 +124,7 @@ class Driver(Component):
         msg = self.canport.recv_pyobj()
         value = self.Format(msg.arbitration_id, msg.data)
         dl = list(msg.data)
-        if self.queryid == msg.arbitration_id:
+        if self.query_id == msg.arbitration_id:
             self.timeout.halt()
             self.query_id = None
             self.canbusqryans.send_pyobj(value)
