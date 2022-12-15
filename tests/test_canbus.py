@@ -131,9 +131,13 @@ def test_cli():
 
         print(f"All nodes have all subscriptions active")
 
-        for i in range(20):
-            print(f"App is running: {i}")
-            time.sleep(1)
+        manual_run = True
+        if manual_run:
+            done = input("Provide input when ready to stop")
+        else:
+            for i in range(20):
+                print(f"App is running: {i}")
+                time.sleep(1)
 
         # Halt application
         print("Halt app")

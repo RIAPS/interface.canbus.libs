@@ -5,6 +5,19 @@ app CanbusExample
 	message CANCommands;
 	message CANEvents;
 
+	library cfg;
+	library res;
+
+	component Scanner()
+	scheduler priority;
+    {
+		qry canbusqryans: (CANQry, CANAns) timed;
+      	sub event_can_sub : CANEvents ;				// subscribe port for CAN events
+      	pub command_can_pub : CANCommands ;			// publish port for CAN commands
+		timer oneshot 2500;
+		timer periodic 5000;
+    }
+
     device Driver(config)
     {
         ans canbusqryans: (CANQry, CANAns) timed;
@@ -13,6 +26,14 @@ app CanbusExample
         timer timeout 1000;
         pub event_can_pub : CANEvents ;				// Publish port for CAN events
     }
+
+    actor CANScanner()
+	{
+		local CANCommands, CANEvents, CANQry, CANAns;
+		{
+			scanner : Scanner();
+		}
+	}
 
     actor CANDriver(config)
     {

@@ -2,7 +2,7 @@ import platform
 
 # code to color terminal text color
 
-if platform.system().upper() == 'WINDOWS' :
+if platform.system().upper() == 'WINDOWS':
     Red = "\033[38;2;128;0;0m"
     LightRed = "\033[38;2;255;0;0m"
     Green = "\033[38;2;0;255;0m"
@@ -16,7 +16,7 @@ if platform.system().upper() == 'WINDOWS' :
     White = "\033[38;2;255,255,255m"
     Black = "\033[38;2;0,0,0m"
     RESET = "\033[0m"
-elif platform.system().upper() == 'LINUX' :
+elif platform.system().upper() == 'LINUX':
     Red = "\033[31m"
     LightRed = "\033[91m"
     Green = "\033[92m"
@@ -45,14 +45,15 @@ else:
     Black = ""
     RESET = ""
 
-def debugMessage( msg, color="", logger=None  ) :
-    if logger != None :
-        if color == "" :
-            logger.info( f"{msg}" )
-        else :
-            logger.info( f"{color}{msg}{RESET}" )
-    else:
-        if color == "" :
-            print( f"{msg}" )
+
+def debugMessage(msg, color="", logger=None):
+    if logger:
+        if color == "":
+            logger.info(f"{msg}")
         else:
-            print( f"{color}{msg}{RESET}" )
+            logger.info(f"{color}{msg}{RESET}")
+    else:
+        if color == "":
+            print(f"{msg}")
+        else:
+            print(f"{color}{msg}{RESET}")

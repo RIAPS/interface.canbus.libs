@@ -4,5 +4,6 @@ app CanbusExample {
         network 172.21.20.70; //IP address of riaps_app_log_server
     }
 
-	on (172.21.20.40) CANDriver(mqtt_config="interfaces/cfg/mqtt.yaml");
+	on (172.21.20.40) CANDriver(config="cfg/bbb_canbus_example.yaml");
+	on (172.21.20.40) CANScanner();
 }

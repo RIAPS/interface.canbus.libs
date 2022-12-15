@@ -1,145 +1,107 @@
-### CAN bus device interface for RIAPS
+# CAN bus device interface for RIAPS
 
-    This module is configured using a YAML file with setting for:
-        - Bus device name
-        - Bus speed
-        - Request Message IDs
-        - Published Message IDs
+## Install canbus utils
+```commandline
+sudo apt install can-utils
+```
 
-##### Sample configuration file is located in the CANApp example: 
+## Configure and enable CANBUS interface.
+* Check that CAN interfaces are available. Note that while a Beaglebone black has the capability to support two CAN interfaces (can0 and can1) the default pin configuration only works for can1. A raspberry pi uses can0. 
+```commandline
+$ ip addr
+3: can1: <NOARP,ECHO> mtu 16 qdisc noop state DOWN group default qlen 10
+    link/can 
+```
 
-https://github.com/RIAPS/interface.canbus.apps/tree/main/CANApp/cfg/sample.yaml
+* If interface is down (`state DOWN`):
+```commandline
+$ sudo ip link set can1 type can bitrate 500000
+$ sudo ip link set can1 up 
+$ ip addr | grep can 
+5: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP group default qlen 10
+    link/can 
+```
 
-The contents are shown below
+## Start Automatically
+Edit `/etc/systemd/network/80-can.network`
+```
+[Match]
+Name=can*
 
----
-    BATT1: 
-       Description: BATTERY CHARGER
-       CAN:
-          # CAN bus system device name
-          device: can0
-          # CAN bus speed, in Hertz
-          speed: 500000 
-          # hardware level filter to reduce data processing
-          filters:
-             # set can_id=0x000 and can_mask=0x000 to receive all messages
-             a: {"can_id": 0x001, "can_mask": 0x3FF, "extended": False} 
-             b: {"can_id": 0x002, "can_mask": 0x3FF, "extended": False}
-             c: {"can_id": 0x003, "can_mask": 0x3FF, "extended": False}
-             d: {"can_id": 0x004, "can_mask": 0x3FF, "extended": False}
-             e: {"can_id": 0x005, "can_mask": 0x3FF, "extended": False}
-             f: {"can_id": 0x006, "can_mask": 0x3FF, "extended": False}
-             g: {"can_id": 0x007, "can_mask": 0x3FF, "extended": False}
-          startbus: True  #if the OS starts the CAN bus this can be set to False
-       Interval: 5000 # msec
-       # RIAPS neighbors
-       Neighbors: []
-       #### Control the level of debug messages ####
-       # 0=CRIT, 
-       # 1=CRIT+ERR, 
-       # 2=CRIT+ERR+WARN, 
-       # 3=CRIT+ERR+WARN+INFO, 
-       # 4=CRIT+ERR+WARN+INFO+DEBUG, 
-       # >4=ALL
-       Debuglevel: 10
+[Link]
+RequiredForOnline=no
 
-       # define any hearbeat that should be updated automatically
-       Heartbeat:
-          freq: 8.0   #hz 
-          id: 0x001
-          dlen: 8
-          remote: False
-          extended: False
-          # value entries describe the data location and format as read or written on the CAN bus
-          data: [1,2,3,4,5,6,7,8]
-          event: 799.0 > HB > 801.0
-       # Parameter mapping for each allowed CAN message ID
-       Parameters:
-          BatteryInfo:
-             mode: event
-             id: 0x001
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as read from the CAN device
-             values:
-                - { "name": "Current", "index": 0, "size": 4, "scaler": 1, "units": "Amperes", "format": ">f" }
-                - { "name": "Temperature", "index": 4, "size": 2, "scaler": 10, "units": "Celcius", "format": ">h" }
-                - { "name": "Voltage", "index": 6, "size": 2, "scaler": 10, "units": "Volts", "format": ">H" }  
-          BatteryState:
-             mode: event
-             id: 0x002
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as read from the CAN device
-             values:
-                - { "name": "Cycles", "index": 0, "size": 4, "scaler": 1, "units": "", "format": ">f" }
-                - { "name": "Charge", "index": 4, "size": 2, "scaler": 10, "units": "Percent", "format": ">H" }  
-          CurrentLimit:
-             mode: response
-             id: 0x003
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as read from the CAN device
-             values:
-                - { "name": "Current", "index": 0, "size": 4, "scaler": 1, "units": "Amps", "format": ">f" }
-          CurrentLimit=:
-             mode: command
-             id: 0x004
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as written to the CAN device
-             values:
-                - { "name": "t1", "index": 0, "size": 4, "scaler": 1, "units": "Amps", "format": ">f" }
-                - { "name": "t2", "index": 4, "size": 2, "scaler": 10, "units": "Amps", "format": ">H" }
-          VoltageLimit=:
-             mode: command
-             id: 0x005
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as written to the CAN device
-             values:
-                - { "name": "v1", "index": 0, "size": 4, "scaler": 1, "units": "Amps", "format": ">f" }
-                - { "name": "v2", "index": 4, "size": 2, "scaler": 10, "units": "Amps", "format": ">H" }
-          PowerLimit=:
-             mode: query
-             id: 0x006
-             dlen: 8
-             remote: False
-             extended: False
-             # value entries describe the data location and format as written to the CAN device
-             values:
-                - { "name": "p1", "index": 0, "size": 4, "scaler": 1, "units": "Watts", "format": ">f" }
-                - { "name": "p2", "index": 4, "size": 4, "scaler": 1, "units": "Watts", "format": ">f" }
-    #
-    #
-    # Data formatting specifiers as defined in python struct module
-    #
-    #
-    #  Format   C Type               Python type  		Standard size
-    #  x	      pad 			         byte			      
-    #  c	      char			         byte	            1
-    #  b	      signed char		      integer		      1
-    #  B	      unsigned char	      integer		      1
-    #  ?	      _Bool			         bool			      1
-    #  h	      short			         integer		      2
-    #  H	      unsigned short	      integer		      2
-    #  i	      int			         integer		      4
-    #  I	      unsigned int	      integer		      4
-    #  l	      long			         integer		      4
-    #  L	      unsigned long	      integer		      4
-    #  q	      long long		      integer		      8
-    #  Q	      unsigned long long	integer		      8
-    #  n	      ssize_t			      integer		       
-    #  N	      size_t			      integer		       
-    #  f	      float			         float			      4
-    #  d	      double			      float			      8
-    #  s        string               string            max 8 bytes
+[CAN]
+BitRate=500K
+RestartSec=500ms
+```
+Reboot. Note: You may have to wait ~10 seconds for the `state` to be `UP`.
+```commandline
+$ ip addr
+5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP group default qlen 10
+    link/can 
+6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP group default qlen 10
+    link/can 
+```
 
+## Test that CANBUS interfaces are functional
+Note: These instructions were created using a [BeagleBone Comms Cape](https://www.digikey.com/en/products/detail/ghi-electronics-llc/COMCPE-BBBCAPE/8567318) for BBB and a raspberry pi 3b+ with the [PiCAN2 CAN-Bus Board]. To use a raspberry pi 4 a PiCAN3 is required and may necessitate other changes. 
+
+1. With the boards powered off, connect with wires the RPi and BBB capes.
+   1. CAN_H -- CAN_H
+   1. CAN_L -- CAN_L
+   1. GND -- GND
+2. Power on the boards
+3. On the RPi run: `candump can0`
+4. On the BBB run: `cansend can0 456#00FFAA5501020305`
+5. The RPi should write the following message to the terminal:
+```
+can1  456   [8]  00 FF AA 55 01 02 03 05
+```
+A similar test can be done, running `candump` and `cansend` on the same board, but the wired connection to another board needs to be present.
+
+# Application Developer Notes
+
+An application using this module requires a YAML file which provides settings for:
+* Bus device name
+* Bus speed
+* Request Message IDs
+* Published Message IDs
+
+[Sample configuration file](https://github.com/RIAPS/interface.canbus.apps/tree/main/CANApp/cfg/sample.yaml) is located in the CANApp example.
+
+
+# Troubleshooting
+
+Q: `ip addr | grep can` does not return any result?
+
+A: If the overlay was just enabled or added, wait a few minutes after boot for the interfaces to be discovered. If you run `dmesg | grep -i can` and see the following this is likely the solution.
+```commandline
+$ dmesg | grep -i can
+[   46.344696] CAN device driver interface
+[   46.532384] c_can_platform 481cc000.can: c_can_platform device registered (regs=4e5fa75b, irq=48)
+[   46.605519] c_can_platform 481d0000.can: c_can_platform device registered (regs=0c612c34, irq=49)
+[   97.135663] c_can_platform 481d0000.can can1: bit-timing not yet defined
+[   97.135698] c_can_platform 481d0000.can can1: failed to open can device
+```
+Note: The overlay used by the Comms cape A2 can be found at `/opt/source/dtb-5.10-ti/src/arm/overlays/BBORG_COMMS-00A2.dts` and is part of the ubuntu distribution. 
+
+Note:  
+The Comms cape A2 overlay is part of the ubuntu distribution and is loaded by the `/boot/uEnv.txt` by the line:
+```
+enable_uboot_cape_universal=1
+```
+
+Q: The `config-pin` commands do not work for `p9.24` and `p9.26`?
+
+A: This is because when the Comms cape A2 is attached its overlay is loaded and [when an overlay takes a pin for a specific function, the overlay disables the corresponding config-pin entry.](https://forum.digikey.com/t/pin-mux-p9-26-not/8750/2)
+```commandline
+ $ config-pin p9.24 can
+ ERROR: open() for /sys/devices/platform/ocp/ocp:P9_24_pinmux/state failed, No such file or directory
+```
+
+
+# Ignore below
 
 ##### CAN bus message format
 
@@ -158,16 +120,13 @@ The contents are shown below
          error_state_indicator
       )
 
-The message structure is found in the python-can project, located here:
-https://github.com/hardbyte/python-can
+The message structure is found in the [python-can project](https://github.com/hardbyte/python-can).
 
 
 During normal operation, the CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiving the message
 the driver then posts the message as an EVENT or ANSWER-to-QUERY.   
 
-A simplistic diagram of just the driver is shown in the following link:
-
-https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png   
+[A simplistic diagram of the driver](https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png)   
 
 
 
