@@ -5,6 +5,8 @@ app CanbusExample
 	message CANCommands;
 	message CANEvents;
 
+	message CfgSignal;
+
 	library cfg;
 	library res;
 
@@ -16,6 +18,8 @@ app CanbusExample
       	pub command_can_pub : CANCommands ;			// publish port for CAN commands
 		timer oneshot 2500;
 		timer periodic 5000;
+
+		pub config_signal_pub : CfgSignal;
     }
 
     device Driver(config)
