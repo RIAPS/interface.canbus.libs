@@ -114,7 +114,7 @@ class Driver(Component):
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setPeriod(0.250)
+        self.timeout.setPeriod(10.250)
         self.timeout.launch()
 
     # riaps:keep_canbusqryans:end
