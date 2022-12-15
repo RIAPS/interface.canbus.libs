@@ -43,9 +43,9 @@ class Scanner(Component):
         (msgtype, msg) = canmsg
 
         if not self.comms_up:
-            # the lower level driver code must send an "config" message
-            # the config message includes the the configuration dictionary
-            # with all configred parameters
+            # the lower level driver code must send a "config" message
+            # the config message includes the configuration dictionary
+            # with all configured parameters
             if msgtype == "config":
                 for d in msg:
                     self.config = d
