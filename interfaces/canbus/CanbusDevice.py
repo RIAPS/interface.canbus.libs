@@ -25,7 +25,7 @@ class Driver(Component):
                         "command": None,
                         "heartbeat": None}
         self.can_node_cfg = None
-        self.cannodename = None
+        self.can_node_name = None
         self.filters = None
         self.candev = None
         self.canspeed = 500000
@@ -53,31 +53,18 @@ class Driver(Component):
             debug(self.logger, f"File I/O error:{config}", level=spdlog.LogLevel.CRITICAL)
 
         if self.cfg is None:
-            debug(self.logger, f"Configuration failed. Configuration file does not exist:{config}", level=spdlog.LogLevel.CRITICAL)
+            debug(self.logger, f"Configuration failed. Configuration file does not exist:{config}",
+                  level=spdlog.LogLevel.CRITICAL)
         elif self.cfg is not None:
             keys = list(self.cfg.keys())
-            self.cannodename = keys[0]
-            self.can_node_cfg = self.cfg[self.cannodename]
+            self.can_node_name = keys[0]
+            self.can_node_cfg = self.cfg[self.can_node_name]
             self.interval_timer = self.can_node_cfg["Interval"]
             self.bus_setup = self.can_node_cfg["CAN"]
             self.parameters = self.can_node_cfg["Parameters"]
-            self.debug_level = self.can_node_cfg["Debuglevel"]
-            if self.debug_level == 0:
-                self.logger.set_level(spdlog.LogLevel.CRITICAL)
-            elif self.debug_level == 1:
-                self.logger.set_level(spdlog.LogLevel.ERR)
-            elif self.debug_level == 2:
-                self.logger.set_level(spdlog.LogLevel.WARN)
-            elif self.debug_level == 3:
-                self.logger.set_level(spdlog.LogLevel.INFO)
-            elif self.debug_level == 4:
-                self.logger.set_level(spdlog.LogLevel.DEBUG)
-            else:
-                self.logger.set_level(spdlog.LogLevel.TRACE)
+            self.logger.set_level(self.can_node_cfg["Debuglevel"])
 
-            # debug( self.logger, f"logging level is {self.logger.get_level()}", level=spdlog.LogLevel.CRITICAL )
-
-            debug(self.logger, f"CAN Node Name: {self.cannodename}", level=spdlog.LogLevel.TRACE)
+            debug(self.logger, f"CAN Node Name: {self.can_node_name}", level=spdlog.LogLevel.TRACE)
             self.startbus = self.bus_setup["startbus"]
             debug(self.logger, f"CAN Bus Start: {self.startbus}", level=spdlog.LogLevel.TRACE)
             self.candev = self.bus_setup["device"]
@@ -189,7 +176,11 @@ class Driver(Component):
                   level=spdlog.LogLevel.CRITICAL)
             return
 
-        self.cancontrol = CanbusControl(dev=self.candev, spd=self.canspeed, logger=self.logger, filters=self.filterlist)
+        self.cancontrol = CanbusControl(dev=self.candev,
+                                        spd=self.canspeed,
+                                        logger=self.logger,
+                                        filters=self.filterlist)
+
         cbus = self.cancontrol.CreateCANBus()
 
         if cbus is not None:
@@ -221,7 +212,7 @@ class Driver(Component):
 
             self.threads["event"].start()
             self.threads["command"].start()
-            # delay to let the threads start an configure the comm plugs
+            # delay to let the threads start and configure the comm plugs
             done = False
             while not done:
                 self.cmdplug = self.threads["command"].get_plug()
@@ -236,7 +227,6 @@ class Driver(Component):
             debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
         else:
             debug(self.logger, f"Error in CAN bus configuration", level=spdlog.LogLevel.CRITICAL)
-
 
     def get_bus_setup(self):
         return self.bus_setup

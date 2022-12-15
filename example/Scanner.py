@@ -50,19 +50,8 @@ class Scanner(Component):
                 for d in msg:
                     self.config = d
                     self.Parameters = self.config["Parameters"]
-                    self.debug_level = self.config["Debuglevel"]
-                    if self.debug_level == 0:
-                        self.logger.set_level(spdlog.LogLevel.CRITICAL)
-                    elif self.debug_level == 1:
-                        self.logger.set_level(spdlog.LogLevel.ERR)
-                    elif self.debug_level == 2:
-                        self.logger.set_level(spdlog.LogLevel.WARN)
-                    elif self.debug_level == 3:
-                        self.logger.set_level(spdlog.LogLevel.INFO)
-                    elif self.debug_level == 4:
-                        self.logger.set_level(spdlog.LogLevel.DEBUG)
-                    else:
-                        self.logger.set_level(spdlog.LogLevel.TRACE)
+                    self.logger.set_level(self.config["Debuglevel"])
+
                     newmsg = (msgtype, [self.Parameters, ])
                     self.config_signal_pub.send_pyobj(newmsg)
                     self.comms_up = True

@@ -21,13 +21,13 @@ BATT1:
    # RIAPS neighbors
    Neighbors: []
    #### Control the level of debug messages ####
-   # 0=CRIT, 
-   # 1=CRIT+ERR, 
-   # 2=CRIT+ERR+WARN, 
-   # 3=CRIT+ERR+WARN+INFO, 
-   # 4=CRIT+ERR+WARN+INFO+DEBUG, 
-   # >4=ALL
-   Debuglevel: 10
+   # 5=CRIT,
+   # 4=CRIT+ERR,
+   # 3=CRIT+ERR+WARN,
+   # 2=CRIT+ERR+WARN+INFO,
+   # 1=CRIT+ERR+WARN+INFO+DEBUG,
+   # 0=ALL
+   Debuglevel: 0
 
    # define any hearbeat that should be updated automatically
    Heartbeat:
