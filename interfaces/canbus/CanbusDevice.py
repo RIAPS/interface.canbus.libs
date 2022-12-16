@@ -19,9 +19,9 @@ class Driver(Component):
     def __init__(self, config):
         super(Driver, self).__init__()
         # debug(self.logger, f"Configuration file:{config}", level=3)
-        # self.threads = {"event": None,
-        #                 "command": None,
-        #                 "heartbeat": None}
+        self.threads = {"event": None,
+                        "command": None,
+                        "heartbeat": None}
         # self.can_node_cfg = None
         # self.can_node_name = None
         # self.filters = None
