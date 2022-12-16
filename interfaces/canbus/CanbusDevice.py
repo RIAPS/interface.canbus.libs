@@ -35,7 +35,7 @@ class Driver(Component):
         # self.parameters = None
         # self.bus_setup = None
         # self.interval_timer = 10000
-        # self.query_id = None
+        self.query_id = None
         # self.sendmsg = None
         # self.hb_msg = None
         # self.logger.set_level(spdlog.LogLevel.TRACE)
