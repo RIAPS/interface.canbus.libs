@@ -1,5 +1,10 @@
 # CAN Device simulation
 
+Run this on a bbb and the current app configuration wil lwork without timeouts. 
+```python
+python3 Charger.py --CH can1 --ID 0x006 --DATA 65,69,112,164,0,245,2,10 --FREQ 0.2 --MODE SR
+```
+
 ### Required Raspberry Pi3 
 ### PiCAN2 module attached and connected to an operational CAN bus
     Note: Jumper JP3 is required on at least 2 modules connected to a single CAN bus.
