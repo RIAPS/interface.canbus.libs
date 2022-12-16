@@ -3,7 +3,7 @@ BATT1:
    Description: BATTERY CHARGER
    CAN:
       # CAN bus system device name
-      device: can1
+      device: can0
       # CAN bus speed, in Hertz
       speed: 500000 
       # hardware level filter to reduce data processing
@@ -17,6 +17,7 @@ BATT1:
          f: {"can_id": 0x006, "can_mask": 0x3FF, "extended": False}
          g: {"can_id": 0x007, "can_mask": 0x3FF, "extended": False}
       startbus: True  #if the OS starts the CAN bus this can be set to False
+      timeout: 3.0  #0.25
    Interval: 5000 # msec
    # RIAPS neighbors
    Neighbors: []
