@@ -27,7 +27,7 @@ class Driver(Component):
         # self.filters = None
         # self.candev = None
         # self.canspeed = 500000
-        # self.filterlist = list()
+        self.filterlist = list()
         # self.startbus = False
         # self.cancontrol = None
         # self.cmdplug = None
