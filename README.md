@@ -100,6 +100,12 @@ A: This is because when the Comms cape A2 is attached its overlay is loaded and 
  ERROR: open() for /sys/devices/platform/ocp/ocp:P9_24_pinmux/state failed, No such file or directory
 ```
 
+# Package Notes
+
+* I'm not sure if the `__init__.py` file under `interfaces` is required.
+* used `[tool.setuptools.packages.find]` because otherwise only interfaces is imported. 
+* Cannot use editable packages for riaps components because they do not have access. 
+
 
 # Ignore below
 

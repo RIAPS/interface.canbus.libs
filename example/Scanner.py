@@ -64,7 +64,7 @@ class Scanner(Component):
                 pass
         else:
             # after initialization CAN messages are received here
-            # then publish and event or answer a response 
+            # then publish an event or answer a response
             txt = f"Driver->Scanner:Posted:{msgtype}"
             debug(self.logger, txt, level=spdlog.LogLevel.INFO, color=tc.Yellow)
             for d in msg:
