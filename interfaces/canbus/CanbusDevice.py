@@ -70,6 +70,7 @@ class Driver(Component):
             self.canspeed = self.bus_setup["speed"]
             debug(self.logger, f"CAN Bus Speed: {self.canspeed}", level=spdlog.LogLevel.TRACE)
             self.filters = self.bus_setup["filters"]
+            self.can_response_timeout = self.bus_setup["timeout"]
 
             # TODO: What is the point of this for loop?
             #  It iterates over a dictionary, grabbing the values and putting them in a list...
@@ -164,7 +165,7 @@ class Driver(Component):
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setDelay(3.250)
+        self.timeout.setDelay(self.can_response_timeout)
         self.timeout.launch()
 
     # riaps:keep_canbusqryans:end
