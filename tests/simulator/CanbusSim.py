@@ -90,7 +90,7 @@ class RecvMsgThread(threading.Thread):
         print("CAN bus receive thread is running.")
         while self.active.is_set():
             msg = self.canbus.recv(timeout=1.0)
-            if (msg != None):
+            if msg:
                 try:
                     # print( "id={0} : id list={1}".format(   hex( msg.arbitration_id )[2:].zfill(3), 
                     #                                         [ hex( n )[2:].zfill(3) for n in self.ids ] ) )
