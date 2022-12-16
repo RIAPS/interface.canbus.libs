@@ -27,7 +27,7 @@ app CanbusExample
         ans canbusqryans: (CANQry, CANAns) timed;
         inside canport;
         sub command_can_sub : CANCommands ;			// subscribe port for CAN commands
-        timer timeout 1000;
+        timer timeout;
         pub event_can_pub : CANEvents ;				// Publish port for CAN events
     }
 

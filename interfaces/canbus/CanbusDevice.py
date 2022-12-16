@@ -14,9 +14,7 @@ import interfaces.canbus.libs.Terminal as tc
 
 
 # riaps:keep_import:end
-
 class Driver(Component):
-
     # riaps:keep_constr:begin
     def __init__(self, config):
         super(Driver, self).__init__()
@@ -101,7 +99,7 @@ class Driver(Component):
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setPeriod(10.250)
+        self.timeout.setPeriod(3.250)
         self.timeout.launch()
 
     # riaps:keep_canbusqryans:end
