@@ -21,8 +21,7 @@ classifiers = [
     "Operating System :: Linux",
 ]
 dependencies = [
-    "python-can",
-    "Terminal"
+    "python-can"
 ]
 
 [project.optional-dependencies]
