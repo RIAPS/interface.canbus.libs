@@ -118,10 +118,12 @@ class Driver(Component):
             # delay to let the threads start and configure the comm plugs
             done = False
             while not done:
-                self.cmdplug = self.threads["command"].get_plug()
-                self.evtplug = self.threads["event"].get_plug()
+                self.cmdplug = self.threads["command"].get_plug()  # get riaps 'plug' to canport inside port
+                self.evtplug = self.threads["event"].get_plug()  # get riaps 'plug' to canport inside port
+                # TODO: These use the same port... why do we create two of them?
                 if self.cmdplug is None or self.evtplug is None:
                     time.sleep(0.100)
+                    # TODO: This is a busy wait...
                 else:
                     done = True
                     # signal components that threads and connections are in active
@@ -135,7 +137,7 @@ class Driver(Component):
 
     # riaps:keep_canbusqryans:begin
     def on_canbusqryans(self):
-        cmdriaps = self.canbusqryans.recv_pyobj()
+        cmdriaps = self.canbusqryans.recv_pyobj()  # riaps ans port
         (query_id, dta, rtr, ext) = cmdriaps
         cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
                              dlc=len(dta),
@@ -144,34 +146,34 @@ class Driver(Component):
                              is_remote_frame=rtr,
                              is_extended_id=ext)
         self.query_id = query_id
-        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
-        self.canport.send_pyobj(cmdmsg)
+        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
+        self.canport.send_pyobj(cmdmsg)  # riaps inside port
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setDelay(self.can_response_timeout)
-        self.timeout.launch()
+        self.timeout.setDelay(self.can_response_timeout)  # riaps sporadic timer
+        self.timeout.launch()  # riaps sporadic timer
 
     # riaps:keep_canbusqryans:end
 
     # riaps:keep_canport:begin
     def on_canport(self):
-        msg = self.canport.recv_pyobj()
-        value = self.Format(msg.arbitration_id, msg.data)
+        msg = self.canport.recv_pyobj()  # riaps inside port
+        value = self.format(msg.arbitration_id, msg.data)
         dl = list(msg.data)
         if self.query_id == msg.arbitration_id:
-            self.timeout.cancel()
+            self.timeout.cancel()  # riaps sporadic timer
             self.query_id = None
-            self.canbusqryans.send_pyobj(value)
+            self.canbusqryans.send_pyobj(value)  # riaps ans port
             debug(self.logger, f"Canbus->Driver:Answer:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
         else:
-            self.event_can_pub.send_pyobj(value)
+            self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
         # riaps:keep_canport:end
 
     # riaps:keep_command_can_sub:begin
     def on_command_can_sub(self):
-        cmdriaps = self.command_can_sub.recv_pyobj()
+        cmdriaps = self.command_can_sub.recv_pyobj()  # riaps sub port
         (arbitration_id, dta, rtr, ext) = cmdriaps
         cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
                              dlc=len(dta),
@@ -179,17 +181,17 @@ class Driver(Component):
                              data=dta,
                              is_remote_frame=rtr,
                              is_extended_id=ext)
-        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
-        self.canport.send_pyobj(cmdmsg)
+        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
+        self.canport.send_pyobj(cmdmsg)  # riaps inside port
         debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
 
     # riaps:keep_command_can_sub:end
 
     # riaps:keep_timeout:begin
     def on_timeout(self):
-        now = self.timeout.recv_pyobj()
+        now = self.timeout.recv_pyobj()  # riaps sporadic timer
         value = ("timeout", self.sendmsg)
-        self.event_can_pub.send_pyobj(value)
+        self.event_can_pub.send_pyobj(value)  # riaps pub port
         debug(self.logger, f"Driver communication timeout triggered.", level=spdlog.LogLevel.CRITICAL)
 
     # riaps:keep_timeout:end
@@ -225,7 +227,7 @@ class Driver(Component):
     def get_config(self):
         return self.can_node_cfg
 
-    def Format(self, msgid, data):
+    def format(self, msgid, data):
         """
         Convert data to CAN message format
         :param msgid:
