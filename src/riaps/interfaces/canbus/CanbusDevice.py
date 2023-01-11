@@ -126,7 +126,7 @@ class Driver(Component):
                     # TODO: This is a busy wait...
                 else:
                     done = True
-                    # self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
+                    self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
                     # signal components that threads and connections are in active
             value = ("config", [self.can_node_cfg, ])
             self.event_can_pub.send_pyobj(value)  # riaps pub port
@@ -147,7 +147,6 @@ class Driver(Component):
                              is_remote_frame=rtr,
                              is_extended_id=ext)
         self.query_id = query_id
-        # self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
         self.sendmsg = cmdriaps
         value = (query_id, dta)
@@ -182,7 +181,6 @@ class Driver(Component):
                              data=dta,
                              is_remote_frame=rtr,
                              is_extended_id=ext)
-        # self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
         debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
 
