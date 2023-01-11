@@ -1,6 +1,6 @@
 import spdlog
 
-import Terminal as tc
+import riaps.interfaces.canbus.libs.Terminal as tc
 
 
 def debug(logger, message, level=spdlog.LogLevel.CRITICAL, color=None):
