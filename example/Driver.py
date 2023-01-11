@@ -1,4 +1,4 @@
-from interfaces.canbus.CanbusDevice import Driver as CanbusDeviceDriver
+from riaps.interfaces.canbus.CanbusDevice import Driver as CanbusDeviceDriver
 
 
 class Driver(CanbusDeviceDriver):

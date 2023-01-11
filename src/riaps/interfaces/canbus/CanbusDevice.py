@@ -8,9 +8,9 @@ import time
 import yaml
 
 from riaps.run.comp import Component
-from interfaces.canbus.libs.CanbusNode import CanbusEventNode, CanbusCommandNode, CanbusControl, CanbusHeartBeat
-from interfaces.canbus.libs.Debug import debug
-import interfaces.canbus.libs.Terminal as tc
+from riaps.interfaces.canbus.libs.CanbusNode import CanbusEventNode, CanbusCommandNode, CanbusControl, CanbusHeartBeat
+from riaps.interfaces.canbus.libs.Debug import debug
+import riaps.interfaces.canbus.libs.Terminal as TermColor
 
 
 # riaps:keep_import:end
@@ -18,27 +18,11 @@ class Driver(Component):
     # riaps:keep_constr:begin
     def __init__(self, config):
         super(Driver, self).__init__()
-        # debug(self.logger, f"Configuration file:{config}", level=3)
-        self.threads = {"event": None,
-                        "command": None,
-                        "heartbeat": None}
-        # self.can_node_cfg = None
-        # self.can_node_name = None
-        # self.filters = None
-        # self.candev = None
-        # self.canspeed = 500000
+        self.threads = {"event": CanbusEventNode(),
+                        "command": CanbusCommandNode(),
+                        "heartbeat": CanbusHeartBeat()}
         self.filterlist = list()
-        # self.startbus = False
-        # self.cancontrol = None
-        # self.cmdplug = None
-        # self.evtplug = None
-        # self.parameters = None
-        # self.bus_setup = None
-        # self.interval_timer = 10000
         self.query_id = None
-        # self.sendmsg = None
-        # self.hb_msg = None
-        # self.logger.set_level(spdlog.LogLevel.TRACE)
 
         try:
             if os.path.exists(config):
@@ -57,7 +41,6 @@ class Driver(Component):
             keys = list(self.cfg.keys())
             self.can_node_name = keys[0]
             self.can_node_cfg = self.cfg[self.can_node_name]
-            # self.interval_timer = self.can_node_cfg["Interval"]
             self.bus_setup = self.can_node_cfg["CAN"]
             self.parameters = self.can_node_cfg["Parameters"]
             self.logger.set_level(self.can_node_cfg["Debuglevel"])
@@ -95,15 +78,16 @@ class Driver(Component):
                   level=spdlog.LogLevel.CRITICAL)
             return
 
-        self.cancontrol = CanbusControl(dev=self.candev,
-                                        spd=self.canspeed,
-                                        logger=self.logger,
-                                        filters=self.filterlist)
+        cancontrol = CanbusControl(dev=self.candev,
+                                   spd=self.canspeed,
+                                   logger=self.logger,
+                                   filters=self.filterlist)
 
-        cbus = self.cancontrol.CreateCANBus()
+        cbus = cancontrol.CreateCANBus()
 
         if cbus is not None:
             # start the canbus threads
+            # These threads are started here because they need the canport which is a riaps `inside` port
             self.threads["event"] = CanbusEventNode(self.logger, self.canport, cbus)
             self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
             # see if a heartbeat is configured
@@ -116,14 +100,14 @@ class Driver(Component):
                 ext = bool(hbparm["extended"])
                 dta = hbparm["data"]
 
-                self.hb_msg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
-                                          dlc=dlen,
-                                          arbitration_id=arbitration_id,
-                                          data=dta,
-                                          is_remote_frame=rtr,
-                                          is_extended_id=ext)
+                hb_msg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
+                                     dlc=dlen,
+                                     arbitration_id=arbitration_id,
+                                     data=dta,
+                                     is_remote_frame=rtr,
+                                     is_extended_id=ext)
 
-                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, self.hb_msg, cbus, freq)
+                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, hb_msg, cbus, freq)
             else:
                 debug(self.logger, f"No heartbeat message configured, heartbeat was thread not created.",
                       level=spdlog.LogLevel.WARN)
@@ -142,7 +126,7 @@ class Driver(Component):
                     done = True
                     # signal components that threads and connections are in active
             value = ("config", [self.can_node_cfg, ])
-            self.event_can_pub.send_pyobj(value)
+            self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
         else:
             debug(self.logger, f"Error in CAN bus configuration", level=spdlog.LogLevel.CRITICAL)
@@ -218,7 +202,10 @@ class Driver(Component):
             t = self.threads[name]
             if t is not None:
                 t.Deactivate()
-                debug(self.logger, f"Deactivating {name} thread...", level=spdlog.LogLevel.TRACE, color=tc.Yellow)
+                debug(self.logger,
+                      f"Deactivating {name} thread...",
+                      level=spdlog.LogLevel.TRACE,
+                      color=TermColor.Yellow)
 
         for name in self.threads:
             t = self.threads[name]
@@ -249,27 +236,22 @@ class Driver(Component):
         result = []
         params = self.parameters
         for p in params:
-            id = int(params[p]["id"])
-            if id == msgid:
-                len = int(params[p]["dlen"])
+            can_msg_id = int(params[p]["id"])
+            if can_msg_id == msgid:
                 values = params[p]["values"]
                 mode = params[p]["mode"]
                 for v in values:
-                    name = v["name"]
-                    index = int(v["index"])
-                    size = int(v["size"])
-                    scaler = int(v["scaler"])
-                    units = v["units"]
-                    format = v["format"]
                     val = []
-                    for i in range(index, index + size):
+                    for i in range(int(v["index"]), int(v["index"]) + int(v["size"])):
                         val.append(data[i])
                     # convert to float ( tuple )
-                    cvtval = struct.unpack(format, bytearray(val))
+                    self.logger.info(f"what is val: {val}")
+                    cvtval = struct.unpack(v["format"], bytearray(val))
+                    self.logger.info(f"what is cvtval: {cvtval}")
                     # apply scaling
                     cvtval = float(cvtval[0])
-                    cvtval = cvtval / scaler
-                    result.append({"name": name, "value": cvtval, "units": units})
+                    cvtval /= int(v["scaler"])
+                    result.append({"name": v["name"], "value": cvtval, "units": v["units"]})
         return mode, result
 
 # riaps:keep_impl:end
