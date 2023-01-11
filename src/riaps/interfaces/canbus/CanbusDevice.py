@@ -18,9 +18,9 @@ class Driver(Component):
     # riaps:keep_constr:begin
     def __init__(self, config):
         super(Driver, self).__init__()
-        self.threads = {"event": CanbusEventNode(),
-                        "command": CanbusCommandNode(),
-                        "heartbeat": CanbusHeartBeat()}
+        self.threads = {"event": None,
+                        "command": None,
+                        "heartbeat": None}
         self.filterlist = list()
         self.query_id = None
 
