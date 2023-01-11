@@ -57,7 +57,7 @@ class Driver(Component):
             keys = list(self.cfg.keys())
             self.can_node_name = keys[0]
             self.can_node_cfg = self.cfg[self.can_node_name]
-            self.interval_timer = self.can_node_cfg["Interval"]
+            # self.interval_timer = self.can_node_cfg["Interval"]
             self.bus_setup = self.can_node_cfg["CAN"]
             self.parameters = self.can_node_cfg["Parameters"]
             self.logger.set_level(self.can_node_cfg["Debuglevel"])

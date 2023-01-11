@@ -1,6 +1,6 @@
 import spdlog
 
-from . import Terminal as tc
+import Terminal as tc
 
 
 def debug(logger, message, level=spdlog.LogLevel.CRITICAL, color=None):
