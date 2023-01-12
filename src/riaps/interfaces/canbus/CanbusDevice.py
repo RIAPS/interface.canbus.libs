@@ -21,7 +21,7 @@ class CanbusDevice(Component):
         self.threads = {"event": None,
                         "command": None,
                         "heartbeat": None}
-        self.filterlist = list()
+        # self.filterlist = list()
         self.query_id = None
 
         try:
@@ -51,7 +51,7 @@ class CanbusDevice(Component):
         # TODO: What is the point of this for loop?
         #  It iterates over a dictionary, grabbing the values and putting them in a list...
         #  Why not just call my_list = list(my_dict.values())
-        self.filterlist = cfg["CANBUS_CONFIG"]["filters"]
+        # self.filterlist = cfg["CANBUS_CONFIG"]["filters"]
         for f in cfg["CANBUS_CONFIG"]["filters"]:
             afilter = cfg["CANBUS_CONFIG"]["filters"][f]
             # self.filterlist.append(afilter)
@@ -76,7 +76,7 @@ class CanbusDevice(Component):
         cancontrol = CanbusControl(channel=self.cfg["CANBUS_CONFIG"]["channel"],
                                    spd=self.cfg["CANBUS_CONFIG"]["speed"],
                                    logger=self.logger,
-                                   filters=self.filterlist)
+                                   filters=self.cfg["CANBUS_CONFIG"]["filters"])
 
         cbus = cancontrol.CreateCANBus(do_can_up=self.cfg["CANBUS_CONFIG"]["do_can_up"])
 
