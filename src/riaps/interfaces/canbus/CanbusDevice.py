@@ -14,10 +14,10 @@ import riaps.interfaces.canbus.libs.Terminal as TermColor
 
 
 # riaps:keep_import:end
-class Driver(Component):
+class CanbusDevice(Component):
     # riaps:keep_constr:begin
     def __init__(self, config):
-        super(Driver, self).__init__()
+        super().__init__()
         self.threads = {"event": None,
                         "command": None,
                         "heartbeat": None}
@@ -126,7 +126,6 @@ class Driver(Component):
                     # TODO: This is a busy wait...
                 else:
                     done = True
-                    # self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
                     # signal components that threads and connections are in active
             value = ("config", [self.cfg, ])
             self.event_can_pub.send_pyobj(value)  # riaps pub port
@@ -148,6 +147,7 @@ class Driver(Component):
                              is_extended_id=ext)
         self.query_id = query_id
         self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
+        # TODO: What is the purpose of this "set_identity"?
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
         self.sendmsg = cmdriaps
         value = (query_id, dta)
@@ -171,22 +171,6 @@ class Driver(Component):
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
         # riaps:keep_canport:end
-
-    # riaps:keep_command_can_sub:begin
-    def on_command_can_sub(self):
-        cmdriaps = self.command_can_sub.recv_pyobj()  # riaps sub port
-        (arbitration_id, dta, rtr, ext) = cmdriaps
-        cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
-                             dlc=len(dta),
-                             arbitration_id=arbitration_id,
-                             data=dta,
-                             is_remote_frame=rtr,
-                             is_extended_id=ext)
-        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
-        self.canport.send_pyobj(cmdmsg)  # riaps inside port
-        debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
-
-    # riaps:keep_command_can_sub:end
 
     # riaps:keep_timeout:begin
     def on_timeout(self):
