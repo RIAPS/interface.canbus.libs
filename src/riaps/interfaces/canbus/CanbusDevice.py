@@ -21,7 +21,6 @@ class CanbusDevice(Component):
         self.threads = {"event": None,
                         "command": None,
                         "heartbeat": None}
-        # self.filterlist = list()
         self.query_id = None
 
         try:
@@ -51,16 +50,12 @@ class CanbusDevice(Component):
         # TODO: What is the point of this for loop?
         #  It iterates over a dictionary, grabbing the values and putting them in a list...
         #  Why not just call my_list = list(my_dict.values())
-        # self.filterlist = cfg["CANBUS_CONFIG"]["filters"]
         for f in cfg["CANBUS_CONFIG"]["filters"]:
-            afilter = f  # cfg["CANBUS_CONFIG"]["filters"][f]
-            # self.filterlist.append(afilter)
-            mask = afilter["can_mask"]
-            mid = afilter["can_id"]
-            ext = afilter["extended"]
-            debug(self.logger, f"Filter {f}=0x{hex(mask)[2:].zfill(3)}, 0x{hex(mid)[2:].zfill(3)}, {ext}",
+            debug(self.logger,
+                  f"Filter 0x{hex(f['can_mask'])[2:].zfill(3)}, "
+                  f"0x{hex(f['can_id'])[2:].zfill(3)}, "
+                  f"{f['extended']}",
                   level=spdlog.LogLevel.TRACE)
-        debug(self.logger, cfg["CANBUS_CONFIG"]["filters"], level=spdlog.LogLevel.TRACE)
 
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
