@@ -22,8 +22,8 @@ def ResetBus(logger):
 
 # starts all the canbus threads and creates the canbus interface
 class CanbusControl:
-    def __init__(self, dev, spd="500000", logger=None, filters=None):
-        self.dev = dev
+    def __init__(self, channel, spd="500000", logger=None, filters=None):
+        self.channel = channel
         self.spd = spd
         if logger is not None:
             self.logger = logger
@@ -47,12 +47,12 @@ class CanbusControl:
     # create the CAN bus object for bus interface
     # if startbus == True the function attempts to start the Linux canbus device
     # if loopback == True the canbus is not used and the internal queue is used for testing
-    def CreateCANBus(self, startbus=True, loopback=False):
+    def CreateCANBus(self, do_can_up=True, loopback=False):
         result = 0
         if not loopback:
             self.logger.info(f"{TerminalColors.Yellow}Starting CAN bus hardware...{TerminalColors.RESET}")
-            if startbus:
-                result = os.WEXITSTATUS(os.system(f"sudo ip link set {self.dev} up type can bitrate {self.spd}"))
+            if do_can_up:
+                result = os.WEXITSTATUS(os.system(f"sudo ip link set {self.channel} up type can bitrate {self.spd}"))
                 if result > 0:
                     if result == 2:
                         self.logger.info(
@@ -60,14 +60,14 @@ class CanbusControl:
                     elif result == 1:
                         self.logger.info(
                             f"{TerminalColors.Red}"
-                            f"CAN Bus device {self.dev} not found! Code=[{result}]"
+                            f"CAN Bus device {self.channel} not found! Code=[{result}]"
                             f"{TerminalColors.RESET}")
                     else:
                         pass
             # if the bus is started then create the CAN bus 
             if result != 1:
                 try:
-                    self.cbus = can.ThreadSafeBus(channel=self.dev, bustype='socketcan', can_filters=self.filters)
+                    self.cbus = can.ThreadSafeBus(channel=self.channel, bustype='socketcan', can_filters=self.filters)
                 except OSError as oex:
                     self.logger.info(f"{TerminalColors.Red}CANBus device error: {oex}{TerminalColors.RESET}")
         else:
@@ -265,7 +265,7 @@ class CanbusEventNode(threading.Thread):
             self.logger.info(f"{TerminalColors.Yellow}CAN Bus is available.{TerminalColors.RESET}")
             while self.events_active.is_set():
                 try:
-                    msg = self.canbus.recv(timeout=self.timeout)
+                    msg = self.canbus.recv(timeout=self.timeout)  # This is from the can device itself.
                     if msg is not None:
                         self.plug.send_pyobj(msg)
                 except can.CanOperationError as ex:
