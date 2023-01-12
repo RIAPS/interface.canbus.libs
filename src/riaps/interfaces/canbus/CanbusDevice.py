@@ -83,7 +83,7 @@ class CanbusDevice(Component):
                                    logger=self.logger,
                                    filters=self.filterlist)
 
-        cbus = cancontrol.CreateCANBus(do_can_up=self.do_can_up)
+        cbus = cancontrol.CreateCANBus(do_can_up=self.cfg["CANBUS_CONFIG"]["do_can_up"])
 
         if cbus is not None:
             # start the canbus threads
