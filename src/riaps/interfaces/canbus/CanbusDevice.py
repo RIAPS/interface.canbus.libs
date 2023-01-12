@@ -36,6 +36,7 @@ class CanbusDevice(Component):
 
         self.cfg = cfg
         self.logger.set_level(cfg["Debuglevel"])
+        self.canbus_timeout = cfg["CANBUS_CONFIG"]["timeout"]
 
         debug(self.logger, f"CAN Node Name: {cfg['Name']}", level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus set link up: {cfg["CANBUS_CONFIG"]["do_can_up"]}', level=spdlog.LogLevel.TRACE)
@@ -53,6 +54,7 @@ class CanbusDevice(Component):
                         "command": None,
                         "heartbeat": None}
         self.query_id = None
+        self.query_response_time = {}
 
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
@@ -136,10 +138,11 @@ class CanbusDevice(Component):
         self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
         # TODO: What is the purpose of this "set_identity"?
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
+        self.query_response_time["start"] = dt.datetime.timestamp()
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query {query_id}:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setDelay(self.cfg["CANBUS_CONFIG"]["timeout"])  # riaps sporadic timer
+        self.timeout.setDelay(self.canbus_timeout)  # riaps sporadic timer
         self.timeout.launch()  # riaps sporadic timer
 
     # riaps:keep_canbusqryans:end
@@ -152,9 +155,11 @@ class CanbusDevice(Component):
         if self.query_id == msg.arbitration_id:
             self.timeout.cancel()  # riaps sporadic timer
             self.query_id = None
+            self.query_response_time["end"] = dt.datetime.timestamp()
+            self.query_response_time["duration"] = self.query_response_time["end"] - self.query_response_time["start"]
             self.canbusqryans.send_pyobj(value)  # riaps ans port
             debug(self.logger,
-                  f"Canbus->Driver:Answer to query {msg.arbitration_id}: {dl}",
+                  f"Canbus->Driver:Answer to query {msg.arbitration_id}: {dl} time:{self.query_response_time}",
                   level=spdlog.LogLevel.TRACE)
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
@@ -185,6 +190,8 @@ class CanbusDevice(Component):
         value = ("timeout", self.sendmsg)
         self.event_can_pub.send_pyobj(value)  # riaps pub port
         debug(self.logger, f"Driver communication timeout triggered.", level=spdlog.LogLevel.CRITICAL)
+        debug(self.logger, f"Try increasing timeout", level=spdlog.LogLevel.CRITICAL)
+        self.canbus_timeout *= 2
 
     # riaps:keep_timeout:end
 
