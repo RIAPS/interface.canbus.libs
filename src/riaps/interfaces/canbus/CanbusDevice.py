@@ -27,54 +27,54 @@ class Driver(Component):
         try:
             if os.path.exists(config):
                 # Load config file
-                with open(config, 'r') as cfg:
-                    self.cfg = yaml.safe_load(cfg)
+                with open(config, 'r') as f:
+                    cfg = yaml.safe_load(f)
             else:
-                self.cfg = None
+                cfg = None
         except OSError:
             debug(self.logger, f"File I/O error:{config}", level=spdlog.LogLevel.CRITICAL)
 
-        if self.cfg is None:
+        if cfg is None:
             debug(self.logger, f"Configuration failed. Configuration file does not exist:{config}",
                   level=spdlog.LogLevel.CRITICAL)
-        elif self.cfg is not None:
-            keys = list(self.cfg.keys())
-            self.can_node_name = keys[0]
-            self.can_node_cfg = self.cfg[self.can_node_name]
-            self.bus_setup = self.can_node_cfg["CAN"]
-            self.parameters = self.can_node_cfg["Parameters"]
-            self.logger.set_level(self.can_node_cfg["Debuglevel"])
+            return
 
-            debug(self.logger, f"CAN Node Name: {self.can_node_name}", level=spdlog.LogLevel.TRACE)
-            self.startbus = self.bus_setup["startbus"]
-            debug(self.logger, f"CAN Bus Start: {self.startbus}", level=spdlog.LogLevel.TRACE)
-            self.candev = self.bus_setup["device"]
-            debug(self.logger, f"CAN Bus Device: {self.candev}", level=spdlog.LogLevel.TRACE)
-            self.canspeed = self.bus_setup["speed"]
-            debug(self.logger, f"CAN Bus Speed: {self.canspeed}", level=spdlog.LogLevel.TRACE)
-            self.filters = self.bus_setup["filters"]
-            self.can_response_timeout = self.bus_setup["timeout"]
+        self.cfg = cfg
+        self.can_node_name = cfg["Name"]
+        self.bus_setup = cfg["CAN"]
+        self.parameters = cfg["Parameters"]
+        self.logger.set_level(cfg["Debuglevel"])
 
-            # TODO: What is the point of this for loop?
-            #  It iterates over a dictionary, grabbing the values and putting them in a list...
-            #  Why not just call my_list = list(my_dict.values())
-            for f in self.filters:
-                afilter = self.filters[f]
-                self.filterlist.append(afilter)
-                mask = afilter["can_mask"]
-                mid = afilter["can_id"]
-                ext = afilter["extended"]
-                debug(self.logger, f"Filter {f}=0x{hex(mask)[2:].zfill(3)}, 0x{hex(mid)[2:].zfill(3)}, {ext}",
-                      level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f"CAN Node Name: {self.can_node_name}", level=spdlog.LogLevel.TRACE)
+        self.startbus = self.bus_setup["startbus"]
+        debug(self.logger, f"CAN Bus Start: {self.startbus}", level=spdlog.LogLevel.TRACE)
+        self.candev = self.bus_setup["device"]
+        debug(self.logger, f"CAN Bus Device: {self.candev}", level=spdlog.LogLevel.TRACE)
+        self.canspeed = self.bus_setup["speed"]
+        debug(self.logger, f"CAN Bus Speed: {self.canspeed}", level=spdlog.LogLevel.TRACE)
+        self.filters = self.bus_setup["filters"]
+        self.can_response_timeout = self.bus_setup["timeout"]
 
-            debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
+        # TODO: What is the point of this for loop?
+        #  It iterates over a dictionary, grabbing the values and putting them in a list...
+        #  Why not just call my_list = list(my_dict.values())
+        for f in self.filters:
+            afilter = self.filters[f]
+            self.filterlist.append(afilter)
+            mask = afilter["can_mask"]
+            mid = afilter["can_id"]
+            ext = afilter["extended"]
+            debug(self.logger, f"Filter {f}=0x{hex(mask)[2:].zfill(3)}, 0x{hex(mid)[2:].zfill(3)}, {ext}",
+                  level=spdlog.LogLevel.TRACE)
+
+        debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
     def handleActivate(self):
 
-        if not self.can_node_cfg:
+        if not self.cfg:
             debug(self.logger,
                   f"Cannot activate. "
-                  f"self.can_node_cfg is {self.can_node_cfg}",
+                  f"self.cfg is {self.cfg}",
                   level=spdlog.LogLevel.CRITICAL)
             return
 
@@ -91,8 +91,8 @@ class Driver(Component):
             self.threads["event"] = CanbusEventNode(self.logger, self.canport, cbus)
             self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
             # see if a heartbeat is configured
-            if "Heartbeat" in self.can_node_cfg.keys():
-                hbparm = self.can_node_cfg["Heartbeat"]
+            if "Heartbeat" in self.cfg:
+                hbparm = self.cfg["Heartbeat"]
                 freq = float(hbparm["freq"])
                 arbitration_id = int(hbparm["id"])
                 dlen = int(hbparm["dlen"])
@@ -128,7 +128,7 @@ class Driver(Component):
                     done = True
                     self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))  # riaps inside port
                     # signal components that threads and connections are in active
-            value = ("config", [self.can_node_cfg, ])
+            value = ("config", [self.cfg, ])
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
         else:
@@ -224,7 +224,7 @@ class Driver(Component):
         return self.parameters
 
     def get_config(self):
-        return self.can_node_cfg
+        return self.cfg
 
     def format(self, msgid, data):
         """
