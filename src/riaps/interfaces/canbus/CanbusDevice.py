@@ -42,30 +42,25 @@ class CanbusDevice(Component):
         self.cfg = cfg
         self.logger.set_level(cfg["Debuglevel"])
         self.parameters = cfg["Parameters"]
-        # self.can_node_name = cfg["Name"]
-        # self.do_can_up = cfg["CANBUS_CONFIG"]["do_can_up"]
-        # self.channel = cfg["CANBUS_CONFIG"]["channel"]
-        # self.canspeed = cfg["CANBUS_CONFIG"]["speed"]
-        # self.filters = cfg["CANBUS_CONFIG"]["filters"]
-        # self.can_response_timeout = cfg["CANBUS_CONFIG"]["timeout"]
 
         debug(self.logger, f"CAN Node Name: {cfg['Name']}", level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus set link up: {cfg["CANBUS_CONFIG"]["do_can_up"]}', level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus Device network interface: {cfg["CANBUS_CONFIG"]["channel"]}', level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'CAN Bus Speed: {cfg["CANBUS_CONFIG"]["speed"]}', level=spdlog.LogLevel.TRACE)
 
-
         # TODO: What is the point of this for loop?
         #  It iterates over a dictionary, grabbing the values and putting them in a list...
         #  Why not just call my_list = list(my_dict.values())
+        self.filterlist = cfg["CANBUS_CONFIG"]["filters"]
         for f in cfg["CANBUS_CONFIG"]["filters"]:
             afilter = cfg["CANBUS_CONFIG"]["filters"][f]
-            self.filterlist.append(afilter)
+            # self.filterlist.append(afilter)
             mask = afilter["can_mask"]
             mid = afilter["can_id"]
             ext = afilter["extended"]
             debug(self.logger, f"Filter {f}=0x{hex(mask)[2:].zfill(3)}, 0x{hex(mid)[2:].zfill(3)}, {ext}",
                   level=spdlog.LogLevel.TRACE)
+        debug(self.logger, cfg["CANBUS_CONFIG"]["filters"], level=spdlog.LogLevel.TRACE)
 
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
