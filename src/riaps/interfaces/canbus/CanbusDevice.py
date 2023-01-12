@@ -40,26 +40,26 @@ class CanbusDevice(Component):
             return
 
         self.cfg = cfg
-        self.can_node_name = cfg["Name"]
-        self.bus_setup = cfg["CAN"]
-        self.parameters = cfg["Parameters"]
         self.logger.set_level(cfg["Debuglevel"])
+        self.parameters = cfg["Parameters"]
+        # self.can_node_name = cfg["Name"]
+        # self.do_can_up = cfg["CANBUS_CONFIG"]["do_can_up"]
+        # self.channel = cfg["CANBUS_CONFIG"]["channel"]
+        # self.canspeed = cfg["CANBUS_CONFIG"]["speed"]
+        # self.filters = cfg["CANBUS_CONFIG"]["filters"]
+        # self.can_response_timeout = cfg["CANBUS_CONFIG"]["timeout"]
 
-        debug(self.logger, f"CAN Node Name: {self.can_node_name}", level=spdlog.LogLevel.TRACE)
-        self.startbus = self.bus_setup["startbus"]
-        debug(self.logger, f"CAN Bus Start: {self.startbus}", level=spdlog.LogLevel.TRACE)
-        self.candev = self.bus_setup["device"]
-        debug(self.logger, f"CAN Bus Device: {self.candev}", level=spdlog.LogLevel.TRACE)
-        self.canspeed = self.bus_setup["speed"]
-        debug(self.logger, f"CAN Bus Speed: {self.canspeed}", level=spdlog.LogLevel.TRACE)
-        self.filters = self.bus_setup["filters"]
-        self.can_response_timeout = self.bus_setup["timeout"]
+        debug(self.logger, f"CAN Node Name: {cfg['Name']}", level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f'Canbus set link up: {cfg["CANBUS_CONFIG"]["do_can_up"]}', level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f'Canbus Device network interface: {cfg["CANBUS_CONFIG"]["network_interface"]}', level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f'CAN Bus Speed: {cfg["CANBUS_CONFIG"]["speed"]}', level=spdlog.LogLevel.TRACE)
+
 
         # TODO: What is the point of this for loop?
         #  It iterates over a dictionary, grabbing the values and putting them in a list...
         #  Why not just call my_list = list(my_dict.values())
-        for f in self.filters:
-            afilter = self.filters[f]
+        for f in cfg["CANBUS_CONFIG"]["filters"]:
+            afilter = cfg["CANBUS_CONFIG"]["filters"][f]
             self.filterlist.append(afilter)
             mask = afilter["can_mask"]
             mid = afilter["can_id"]
@@ -78,12 +78,12 @@ class CanbusDevice(Component):
                   level=spdlog.LogLevel.CRITICAL)
             return
 
-        cancontrol = CanbusControl(dev=self.candev,
-                                   spd=self.canspeed,
+        cancontrol = CanbusControl(dev=self.cfg["CANBUS_CONFIG"]["network_interface"],
+                                   spd=self.cfg["CANBUS_CONFIG"]["speed"],
                                    logger=self.logger,
                                    filters=self.filterlist)
 
-        cbus = cancontrol.CreateCANBus()
+        cbus = cancontrol.CreateCANBus(do_can_up=self.do_can_up)
 
         if cbus is not None:
             # start the canbus threads
@@ -152,7 +152,7 @@ class CanbusDevice(Component):
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setDelay(self.can_response_timeout)  # riaps sporadic timer
+        self.timeout.setDelay(self.cfg["CANBUS_CONFIG"]["timeout"])  # riaps sporadic timer
         self.timeout.launch()  # riaps sporadic timer
 
     # riaps:keep_canbusqryans:end
@@ -222,7 +222,7 @@ class CanbusDevice(Component):
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
     def get_bus_setup(self):
-        return self.bus_setup
+        return self.cfg["CANBUS_CONFIG"]
 
     def get_parameters(self):
         return self.parameters
