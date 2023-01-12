@@ -18,10 +18,6 @@ class CanbusDevice(Component):
     # riaps:keep_constr:begin
     def __init__(self, config):
         super().__init__()
-        self.threads = {"event": None,
-                        "command": None,
-                        "heartbeat": None}
-        self.query_id = None
 
         try:
             if os.path.exists(config):
@@ -40,22 +36,23 @@ class CanbusDevice(Component):
 
         self.cfg = cfg
         self.logger.set_level(cfg["Debuglevel"])
-        self.parameters = cfg["Parameters"]
 
         debug(self.logger, f"CAN Node Name: {cfg['Name']}", level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus set link up: {cfg["CANBUS_CONFIG"]["do_can_up"]}', level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus Device network interface: {cfg["CANBUS_CONFIG"]["channel"]}', level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'CAN Bus Speed: {cfg["CANBUS_CONFIG"]["speed"]}', level=spdlog.LogLevel.TRACE)
 
-        # TODO: What is the point of this for loop?
-        #  It iterates over a dictionary, grabbing the values and putting them in a list...
-        #  Why not just call my_list = list(my_dict.values())
         for f in cfg["CANBUS_CONFIG"]["filters"]:
             debug(self.logger,
                   f"Filter 0x{hex(f['can_mask'])[2:].zfill(3)}, "
                   f"0x{hex(f['can_id'])[2:].zfill(3)}, "
                   f"{f['extended']}",
                   level=spdlog.LogLevel.TRACE)
+
+        self.threads = {"event": None,
+                        "command": None,
+                        "heartbeat": None}
+        self.query_id = None
 
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
 
@@ -141,7 +138,7 @@ class CanbusDevice(Component):
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
         self.sendmsg = cmdriaps
         value = (query_id, dta)
-        debug(self.logger, f"Driver->CANBus:Query:{value}", level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f"Driver->CANBus:Query {query_id}:{value}", level=spdlog.LogLevel.TRACE)
         self.timeout.setDelay(self.cfg["CANBUS_CONFIG"]["timeout"])  # riaps sporadic timer
         self.timeout.launch()  # riaps sporadic timer
 
@@ -156,7 +153,9 @@ class CanbusDevice(Component):
             self.timeout.cancel()  # riaps sporadic timer
             self.query_id = None
             self.canbusqryans.send_pyobj(value)  # riaps ans port
-            debug(self.logger, f"Canbus->Driver:Answer:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
+            debug(self.logger,
+                  f"Canbus->Driver:Answer to query {msg.arbitration_id}: {dl}",
+                  level=spdlog.LogLevel.TRACE)
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
@@ -215,7 +214,7 @@ class CanbusDevice(Component):
         return self.cfg["CANBUS_CONFIG"]
 
     def get_parameters(self):
-        return self.parameters
+        return self.cfg["Parameters"]
 
     def get_config(self):
         return self.cfg
@@ -229,7 +228,7 @@ class CanbusDevice(Component):
         """
         mode = None
         result = []
-        params = self.parameters
+        params = self.cfg["Parameters"]
         for p in params:
             can_msg_id = int(params[p]["id"])
             if can_msg_id == msgid:
