@@ -51,7 +51,7 @@ class CanbusDevice(Component):
 
         debug(self.logger, f"CAN Node Name: {cfg['Name']}", level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'Canbus set link up: {cfg["CANBUS_CONFIG"]["do_can_up"]}', level=spdlog.LogLevel.TRACE)
-        debug(self.logger, f'Canbus Device network interface: {cfg["CANBUS_CONFIG"]["network_interface"]}', level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f'Canbus Device network interface: {cfg["CANBUS_CONFIG"]["channel"]}', level=spdlog.LogLevel.TRACE)
         debug(self.logger, f'CAN Bus Speed: {cfg["CANBUS_CONFIG"]["speed"]}', level=spdlog.LogLevel.TRACE)
 
 
@@ -78,7 +78,7 @@ class CanbusDevice(Component):
                   level=spdlog.LogLevel.CRITICAL)
             return
 
-        cancontrol = CanbusControl(dev=self.cfg["CANBUS_CONFIG"]["network_interface"],
+        cancontrol = CanbusControl(dev=self.cfg["CANBUS_CONFIG"]["channel"],
                                    spd=self.cfg["CANBUS_CONFIG"]["speed"],
                                    logger=self.logger,
                                    filters=self.filterlist)
