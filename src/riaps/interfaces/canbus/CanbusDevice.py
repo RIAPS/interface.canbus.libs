@@ -78,7 +78,7 @@ class CanbusDevice(Component):
                   level=spdlog.LogLevel.CRITICAL)
             return
 
-        cancontrol = CanbusControl(dev=self.cfg["CANBUS_CONFIG"]["channel"],
+        cancontrol = CanbusControl(channel=self.cfg["CANBUS_CONFIG"]["channel"],
                                    spd=self.cfg["CANBUS_CONFIG"]["speed"],
                                    logger=self.logger,
                                    filters=self.filterlist)
