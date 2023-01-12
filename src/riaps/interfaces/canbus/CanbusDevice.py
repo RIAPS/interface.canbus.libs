@@ -53,7 +53,7 @@ class CanbusDevice(Component):
         #  Why not just call my_list = list(my_dict.values())
         # self.filterlist = cfg["CANBUS_CONFIG"]["filters"]
         for f in cfg["CANBUS_CONFIG"]["filters"]:
-            afilter = cfg["CANBUS_CONFIG"]["filters"][f]
+            afilter = f  # cfg["CANBUS_CONFIG"]["filters"][f]
             # self.filterlist.append(afilter)
             mask = afilter["can_mask"]
             mid = afilter["can_id"]
