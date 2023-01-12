@@ -172,6 +172,24 @@ class CanbusDevice(Component):
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
         # riaps:keep_canport:end
 
+    # riaps:keep_command_can_sub:begin
+    def on_command_can_sub(self):
+        cmdriaps = self.command_can_sub.recv_pyobj()  # riaps sub port
+        (arbitration_id, dta, rtr, ext) = cmdriaps
+        cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
+                             dlc=len(dta),
+                             arbitration_id=arbitration_id,
+                             data=dta,
+                             is_remote_frame=rtr,
+                             is_extended_id=ext)
+        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
+        # TODO: What is the purpose of this "set_identity"?
+        #  If it is removed I get a "Driver communication timeout triggered"
+        self.canport.send_pyobj(cmdmsg)  # riaps inside port
+        debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
+
+    # riaps:keep_command_can_sub:end
+
     # riaps:keep_timeout:begin
     def on_timeout(self):
         now = self.timeout.recv_pyobj()  # riaps sporadic timer
