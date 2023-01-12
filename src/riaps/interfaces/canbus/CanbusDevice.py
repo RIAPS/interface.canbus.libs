@@ -138,7 +138,7 @@ class CanbusDevice(Component):
         self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
         # TODO: What is the purpose of this "set_identity"?
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
-        self.query_response_time["start"] = dt.datetime.timestamp()
+        self.query_response_time["start"] = dt.datetime.now()
         self.sendmsg = cmdriaps
         value = (query_id, dta)
         debug(self.logger, f"Driver->CANBus:Query {query_id}:{value}", level=spdlog.LogLevel.TRACE)
@@ -155,11 +155,15 @@ class CanbusDevice(Component):
         if self.query_id == msg.arbitration_id:
             self.timeout.cancel()  # riaps sporadic timer
             self.query_id = None
-            self.query_response_time["end"] = dt.datetime.timestamp()
-            self.query_response_time["duration"] = self.query_response_time["end"] - self.query_response_time["start"]
+            now = dt.datetime.now()
+            self.query_response_time["end"] = now
+            duration = (now - self.query_response_time["start"]).total_seconds()
+            self.query_response_time["duration"] = duration
             self.canbusqryans.send_pyobj(value)  # riaps ans port
             debug(self.logger,
-                  f"Canbus->Driver:Answer to query {msg.arbitration_id}: {dl} time:{self.query_response_time}",
+                  f"Canbus->Driver:Answer to query {msg.arbitration_id}: {dl} "
+                  f"time:{self.query_response_time} "
+                  f"current timeout: {self.canbus_timeout}",
                   level=spdlog.LogLevel.TRACE)
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
