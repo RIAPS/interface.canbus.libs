@@ -54,6 +54,7 @@ class CanbusDevice(Component):
                         "command": None,
                         "heartbeat": None}
         self.query_id = None
+        self.query_count = 0
         self.query_response_time = {}
 
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
@@ -81,24 +82,23 @@ class CanbusDevice(Component):
             self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
             # see if a heartbeat is configured
             if "Heartbeat" in self.cfg:
-                hbparm = self.cfg["Heartbeat"]
-                freq = float(hbparm["freq"])
-                arbitration_id = int(hbparm["id"])
-                dlen = int(hbparm["dlen"])
-                rtr = bool(hbparm["remote"])
-                ext = bool(hbparm["extended"])
-                dta = hbparm["data"]
+                # hbparm = self.cfg["Heartbeat"]
+                # arbitration_id = int(hbparm["id"])
+                # dlen = int(hbparm["dlen"])
+                # rtr = bool(hbparm["remote"])
+                # ext = bool(hbparm["extended"])
+                # dta = hbparm["data"]
 
                 hb_msg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
-                                     dlc=dlen,
-                                     arbitration_id=arbitration_id,
-                                     data=dta,
-                                     is_remote_frame=rtr,
-                                     is_extended_id=ext)
+                                     dlc=self.cfg["Heartbeat"]["dlen"],
+                                     arbitration_id=self.cfg["Heartbeat"]["id"],
+                                     data=self.cfg["Heartbeat"]["data"],
+                                     is_remote_frame=self.cfg["Heartbeat"]["remote"],
+                                     is_extended_id=self.cfg["Heartbeat"]["extended"])
 
-                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, hb_msg, cbus, freq)
+                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, hb_msg, cbus, self.cfg["Heartbeat"]["freq"])
             else:
-                debug(self.logger, f"No heartbeat message configured, heartbeat was thread not created.",
+                debug(self.logger, f"No heartbeat message configured, heartbeat thread was not created.",
                       level=spdlog.LogLevel.WARN)
 
             for t in self.threads:
@@ -128,6 +128,7 @@ class CanbusDevice(Component):
     def on_canbusqryans(self):
         cmdriaps = self.canbusqryans.recv_pyobj()  # riaps ans port
         (query_id, dta, rtr, ext) = cmdriaps
+        # TODO: move message construction to a function
         cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
                              dlc=len(dta),
                              arbitration_id=query_id,
@@ -165,6 +166,10 @@ class CanbusDevice(Component):
                   f"time:{self.query_response_time} "
                   f"current timeout: {self.canbus_timeout}",
                   level=spdlog.LogLevel.TRACE)
+            # TODO: I thought query_id was incremented on each message. Nope.
+            #  canbus uses to prioritize which message is sent... and calls it
+            #  an arbitration_id. I'm not sure what, if any, purpose comparing the
+            #  the arbitration_id against self.query_id has.
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
