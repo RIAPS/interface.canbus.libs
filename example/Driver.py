@@ -1,6 +1,7 @@
-from riaps.interfaces.canbus.CanbusDevice import Driver as CanbusDeviceDriver
+from riaps.interfaces.canbus.CanbusDevice import CanbusDevice
 
 
-class Driver(CanbusDeviceDriver):
+class Driver(CanbusDevice):
     def __init__(self, config):
         super().__init__(config)
+
