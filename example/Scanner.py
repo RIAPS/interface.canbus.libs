@@ -124,7 +124,7 @@ class Scanner(Component):
                     # vals = [ {"p1": 12.34}, {"p2": 56.0} ]
                     # vals = {"p1": 12.34, "p2": 56.0}
                     for v in values:
-                        name = v["name"]
+                        name = v
                         for d in vals:  # {"p1": 12.34}
                             k = list(d.keys())[0]  # p1
                             if k == name:
