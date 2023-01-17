@@ -157,7 +157,11 @@ class CanbusHeartBeat(threading.Thread):
                 if not self.heartbeat_skip.is_set():
                     if self.hbmsg is not None:
                         try:
-                            self.canbus.send(self.hbmsg)
+                            self.canbus.send(self.hbmsg, timeout=None)
+                            # this is a blocking call when timeout=None
+                            # https://python-can.readthedocs.io/en/stable/internal-api.html#can.BusABC.send
+                            # Implementation for socketcan interface
+                            # https://github.com/hardbyte/python-can/blob/develop/can/interfaces/socketcan/socketcan.py#L749
                         except can.CanOperationError as ex:
                             # ResetBus(self.logger)
                             # recover if the event the xmit buffer becomes full
@@ -209,8 +213,11 @@ class CanbusCommandNode(threading.Thread):
                 if len(s) > 0:
                     msg = self.plug.recv_pyobj()
                     try:
-                        self.canbus.send(msg)
-                        # self.logger.info( f"{TerminalColors.Yellow}Command msg:{msg}{TerminalColors.RESET}" )
+                        self.canbus.send(msg, timeout=None)
+                        # this is a blocking call when timeout=None
+                        # https://python-can.readthedocs.io/en/stable/internal-api.html#can.BusABC.send
+                        # Implementation for socketcan interface
+                        # https://github.com/hardbyte/python-can/blob/develop/can/interfaces/socketcan/socketcan.py#L749
                     except can.CanOperationError as ex:
                         # ResetBus(self.logger)
                         # allow the system to recover in the event of a xmit buffer full error
