@@ -248,16 +248,20 @@ class CanbusDevice(Component):
                 mode = params[p]["mode"]
                 for v in values:
                     val = []
-                    for i in range(int(v["index"]), int(v["index"]) + int(v["size"])):
+                    # for i in range(int(v["index"]), int(v["index"]) + int(v["size"])):
+                    #     pass
+                    start_index = values[v]["index"]
+                    end_index = start_index + values[v]["size"]
+                    for i in range(start_index, end_index):
                         val.append(data[i])
                     # convert to float ( tuple )
                     self.logger.info(f"what is val: {val}")
-                    cvtval = struct.unpack(v["format"], bytearray(val))
+                    cvtval = struct.unpack(values[v]["format"], bytearray(val))
                     self.logger.info(f"what is cvtval: {cvtval}")
                     # apply scaling
                     cvtval = float(cvtval[0])
                     cvtval /= int(v["scaler"])
-                    result.append({"name": v["name"], "value": cvtval, "units": v["units"]})
+                    result.append({"name": v, "value": cvtval, "units": values[v]["units"]})
         return mode, result
 
 # riaps:keep_impl:end
