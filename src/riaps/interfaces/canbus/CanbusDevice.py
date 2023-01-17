@@ -260,7 +260,7 @@ class CanbusDevice(Component):
                     self.logger.info(f"what is cvtval: {cvtval}")
                     # apply scaling
                     cvtval = float(cvtval[0])
-                    cvtval /= int(v["scaler"])
+                    cvtval /= int(values[v]["scaler"])
                     result.append({"name": v, "value": cvtval, "units": values[v]["units"]})
         return mode, result
 
