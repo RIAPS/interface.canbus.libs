@@ -84,7 +84,7 @@ class Scanner(Component):
     def on_periodic(self):
         now = self.periodic.recv_pyobj()
         if self.comms_up:
-            (cmd, vals) = ("PowerLimit", [{"p1": 12.34}, {"p2": 56.0}])
+            (cmd, vals) = ("PowerLimit=", {"p1": 12.34, "p2": 56.0})
             sendcmd = self.build_command(cmd, vals)
             self.canbusqryans.send_pyobj(sendcmd)
             debug(self.logger,
@@ -109,6 +109,7 @@ class Scanner(Component):
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
     def build_command(self, cmd, vals):
+        # todo: this doesn't seem like it belongs here. Seems more like it should be an imported utility function
         sendcmd = (-1, [], False, False)
         for p in self.Parameters:
             if p.find(cmd) != -1:
@@ -120,12 +121,14 @@ class Scanner(Component):
                     ext = bool(self.Parameters[p]["extended"])
                     values = self.Parameters[p]["values"]
                     data = [0] * len
+                    # vals = [ {"p1": 12.34}, {"p2": 56.0} ]
+                    # vals = {"p1": 12.34, "p2": 56.0}
                     for v in values:
                         name = v["name"]
-                        for d in vals:
-                            k = list(d.keys())[0]
+                        for d in vals:  # {"p1": 12.34}
+                            k = list(d.keys())[0]  # p1
                             if k == name:
-                                newval = float(d[k])
+                                newval = float(d[k])  # 12.34
                                 index = int(v["index"])
                                 size = int(v["size"])
                                 scaler = int(v["scaler"])
