@@ -75,52 +75,48 @@ class CanbusDevice(Component):
 
         cbus = cancontrol.CreateCANBus(do_can_up=self.cfg["CANBUS_CONFIG"]["do_can_up"])
 
-        if cbus is not None:
-            # start the canbus threads
-            # These threads are started here because they need the canport which is a riaps `inside` port
-            self.threads["event"] = CanbusEventNode(self.logger, self.canport, cbus)
-            self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
-            # see if a heartbeat is configured
-            if "Heartbeat" in self.cfg:
-                # hbparm = self.cfg["Heartbeat"]
-                # arbitration_id = int(hbparm["id"])
-                # dlen = int(hbparm["dlen"])
-                # rtr = bool(hbparm["remote"])
-                # ext = bool(hbparm["extended"])
-                # dta = hbparm["data"]
-
-                hb_msg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
-                                     dlc=self.cfg["Heartbeat"]["dlen"],
-                                     arbitration_id=self.cfg["Heartbeat"]["id"],
-                                     data=self.cfg["Heartbeat"]["data"],
-                                     is_remote_frame=self.cfg["Heartbeat"]["remote"],
-                                     is_extended_id=self.cfg["Heartbeat"]["extended"])
-
-                self.threads["heartbeat"] = CanbusHeartBeat(self.logger, hb_msg, cbus, self.cfg["Heartbeat"]["freq"])
-            else:
-                debug(self.logger, f"No heartbeat message configured, heartbeat thread was not created.",
-                      level=spdlog.LogLevel.WARN)
-
-            for t in self.threads:
-                self.threads[t].start()
-
-            # delay to let the threads start and configure the comm plugs
-            done = False
-            while not done:
-                self.cmdplug = self.threads["command"].get_plug()  # get riaps 'plug' to canport inside port
-                self.evtplug = self.threads["event"].get_plug()  # get riaps 'plug' to canport inside port
-                # TODO: These use the same port... why do we create two of them?
-                if self.cmdplug is None or self.evtplug is None:
-                    time.sleep(0.100)
-                    # TODO: This is a busy wait...
-                else:
-                    done = True
-                    # signal components that threads and connections are in active
-            value = ("config", [self.cfg, ])
-            self.event_can_pub.send_pyobj(value)  # riaps pub port
-            debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
-        else:
+        if cbus is None:
             debug(self.logger, f"Error in CAN bus configuration", level=spdlog.LogLevel.CRITICAL)
+            return
+
+        # cbus is not None
+        # start the canbus threads
+        # These threads are started here because they need the canport which is a riaps `inside` port
+        self.threads["event"] = CanbusEventNode(self.logger, self.canport, cbus)
+        self.threads["command"] = CanbusCommandNode(self.logger, self.canport, cbus)
+        # see if a heartbeat is configured
+        if "Heartbeat" in self.cfg:
+            hb_msg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
+                                 dlc=self.cfg["Heartbeat"]["dlen"],
+                                 arbitration_id=self.cfg["Heartbeat"]["id"],
+                                 data=self.cfg["Heartbeat"]["data"],
+                                 is_remote_frame=self.cfg["Heartbeat"]["remote"],
+                                 is_extended_id=self.cfg["Heartbeat"]["extended"])
+
+            self.threads["heartbeat"] = CanbusHeartBeat(self.logger, hb_msg, cbus, self.cfg["Heartbeat"]["freq"])
+        else:
+            debug(self.logger, f"No heartbeat message configured, heartbeat thread was not created.",
+                  level=spdlog.LogLevel.WARN)
+
+        for t in self.threads:
+            self.threads[t].start()
+
+        # delay to let the threads start and configure the comm plugs
+        done = False
+        while not done:
+            self.cmdplug = self.threads["command"].get_plug()  # get riaps 'plug' to canport inside port
+            self.evtplug = self.threads["event"].get_plug()  # get riaps 'plug' to canport inside port
+            # TODO: These use the same port... why do we create two of them?
+            if self.cmdplug is None or self.evtplug is None:
+                time.sleep(0.100)
+                # TODO: This is a busy wait...
+            else:
+                done = True
+                # signal components that threads and connections are in active
+        value = ("config", [self.cfg, ])
+        self.event_can_pub.send_pyobj(value)  # riaps pub port
+        # publish config to other components because the message parameters are used to construct messages.
+        debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
 
     # riaps:keep_constr:end
 
