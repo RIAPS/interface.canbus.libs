@@ -53,7 +53,7 @@ class CanbusDevice(Component):
         self.threads = {"event": None,
                         "command": None,
                         "heartbeat": None}
-        self.query_id = None
+        self.arbitration_id = None
         self.query_count = 0
         self.query_response_time = {}
 
@@ -120,38 +120,14 @@ class CanbusDevice(Component):
 
     # riaps:keep_constr:end
 
-    # riaps:keep_canbusqryans:begin
-    def on_canbusqryans(self):
-        cmdriaps = self.canbusqryans.recv_pyobj()  # riaps ans port
-        (query_id, dta, rtr, ext) = cmdriaps
-        # TODO: move message construction to a function
-        cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
-                             dlc=len(dta),
-                             arbitration_id=query_id,
-                             data=dta,
-                             is_remote_frame=rtr,
-                             is_extended_id=ext)
-        self.query_id = query_id
-        self.canport.set_identity(self.canport.get_plug_identity(self.cmdplug))
-        # TODO: What is the purpose of this "set_identity"?
-        self.canport.send_pyobj(cmdmsg)  # riaps inside port
-        self.query_response_time["start"] = dt.datetime.now()
-        self.sendmsg = cmdriaps
-        value = (query_id, dta)
-        debug(self.logger, f"Driver->CANBus:Query {query_id}:{value}", level=spdlog.LogLevel.TRACE)
-        self.timeout.setDelay(self.canbus_timeout)  # riaps sporadic timer
-        self.timeout.launch()  # riaps sporadic timer
-
-    # riaps:keep_canbusqryans:end
-
     # riaps:keep_canport:begin
     def on_canport(self):
         msg = self.canport.recv_pyobj()  # riaps inside port
         value = self.format(msg.arbitration_id, msg.data)
         dl = list(msg.data)
-        if self.query_id == msg.arbitration_id:
+        if self.arbitration_id == msg.arbitration_id:
             self.timeout.cancel()  # riaps sporadic timer
-            self.query_id = None
+            self.arbitration_id = None
             now = dt.datetime.now()
             self.query_response_time["end"] = now
             duration = (now - self.query_response_time["start"]).total_seconds()
@@ -165,16 +141,48 @@ class CanbusDevice(Component):
             # TODO: I thought query_id was incremented on each message. Nope.
             #  canbus uses to prioritize which message is sent... and calls it
             #  an arbitration_id. I'm not sure what, if any, purpose comparing the
-            #  the arbitration_id against self.query_id has.
+            #  the arbitration_id against self.arbitration_id has.
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
         # riaps:keep_canport:end
 
+    # riaps:keep_canbusqryans:begin
+    def on_canbusqryans(self):
+        qryriaps = self.canbusqryans.recv_pyobj()  # riaps ans port
+
+        (arbitration_id, dta, rtr, ext) = qryriaps
+        self.arbitration_id = arbitration_id
+        self.query_response_time["start"] = dt.datetime.now()
+        self.sendmsg = qryriaps
+        debug(self.logger, f"Driver->CANBus:Query {arbitration_id, dta}", level=spdlog.LogLevel.TRACE)
+
+        self.send_canbus_msg(qryriaps)
+
+        self.timeout.setDelay(self.canbus_timeout)  # riaps sporadic timer
+        self.timeout.launch()  # riaps sporadic timer
+    # riaps:keep_canbusqryans:end
+
     # riaps:keep_command_can_sub:begin
     def on_command_can_sub(self):
         cmdriaps = self.command_can_sub.recv_pyobj()  # riaps sub port
-        (arbitration_id, dta, rtr, ext) = cmdriaps
+        self.send_canbus_msg(cmdriaps)
+        debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
+    # riaps:keep_command_can_sub:end
+
+    # riaps:keep_timeout:begin
+    def on_timeout(self):
+        now = self.timeout.recv_pyobj()  # riaps sporadic timer
+        value = ("timeout", self.sendmsg)
+        self.event_can_pub.send_pyobj(value)  # riaps pub port
+        debug(self.logger, f"Driver communication timeout triggered.", level=spdlog.LogLevel.CRITICAL)
+        debug(self.logger, f"Try increasing timeout", level=spdlog.LogLevel.CRITICAL)
+    # riaps:keep_timeout:end
+
+    # riaps:keep_impl:begin
+
+    def send_canbus_msg(self, msg):
+        (arbitration_id, dta, rtr, ext) = msg
         cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
                              dlc=len(dta),
                              arbitration_id=arbitration_id,
@@ -185,22 +193,6 @@ class CanbusDevice(Component):
         # TODO: What is the purpose of this "set_identity"?
         #  If it is removed I get a "Driver communication timeout triggered"
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
-        debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
-
-    # riaps:keep_command_can_sub:end
-
-    # riaps:keep_timeout:begin
-    def on_timeout(self):
-        now = self.timeout.recv_pyobj()  # riaps sporadic timer
-        value = ("timeout", self.sendmsg)
-        self.event_can_pub.send_pyobj(value)  # riaps pub port
-        debug(self.logger, f"Driver communication timeout triggered.", level=spdlog.LogLevel.CRITICAL)
-        debug(self.logger, f"Try increasing timeout", level=spdlog.LogLevel.CRITICAL)
-        self.canbus_timeout *= 2
-
-    # riaps:keep_timeout:end
-
-    # riaps:keep_impl:begin
 
     def __destroy__(self):
 
@@ -215,27 +207,6 @@ class CanbusDevice(Component):
                       level=spdlog.LogLevel.TRACE,
                       color=TermColor.Yellow)
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
-
-        # for name in self.threads:
-        #     t = self.threads[name]
-        #     if t is None:
-        #         continue
-        #     t.Deactivate()
-        #     debug(self.logger,
-        #           f"Deactivating {name} thread...",
-        #           level=spdlog.LogLevel.TRACE,
-        #           color=TermColor.Yellow)
-        #
-        # for name in self.threads:
-        #     t = self.threads[name]
-        #     if t is None:
-        #         continue
-        #     t.join(timeout=10)
-        #
-        #     if t.is_alive():
-        #         debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
-        #
-        # debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
     def get_bus_setup(self):
         return self.cfg["CANBUS_CONFIG"]
