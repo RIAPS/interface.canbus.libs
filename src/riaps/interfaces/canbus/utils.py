@@ -1,3 +1,5 @@
+import can
+import datetime
 import struct
 
 data_type_properties = {
@@ -31,8 +33,6 @@ def build_command(cfg, cmd, msg_vals):
 
     # check that the values sent match the values used in the message parameterization
     for value_name in msg_vals:
-        print(f"utils value_name: {value_name}")
-        print(f"utils cfg_values: {cfg_values}")
         if value_name not in cfg_values:
             continue
         cfg_value_properties = cfg_values[value_name]
@@ -59,7 +59,7 @@ def build_command(cfg, cmd, msg_vals):
                        f"Check Parameters in device yaml file, and perhaps choose a different data type."
 
         frame = struct.pack(value_format, newval)
-        integer_data = struct.unpack("B"*size, frame)
+        integer_data = struct.unpack("B" * size, frame)
         i = 0
         for b in integer_data:
             data[index + i] = integer_data[i]
