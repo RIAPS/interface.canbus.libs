@@ -204,23 +204,38 @@ class CanbusDevice(Component):
 
     def __destroy__(self):
 
-        for name in self.threads:
-            t = self.threads[name]
-            if t is not None:
-                t.Deactivate()
+        for f in ["Deactivate", "join", "is_alive"]:
+            for name in self.threads:
+                t = self.threads[name]
+                if t is None:
+                    continue
+                getattr(t, f)
                 debug(self.logger,
-                      f"Deactivating {name} thread...",
+                      f"{f} {name} thread...",
                       level=spdlog.LogLevel.TRACE,
                       color=TermColor.Yellow)
-
-        for name in self.threads:
-            t = self.threads[name]
-            if t is not None:
-                t.join(timeout=10)
-                if t.is_alive():
-                    debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
-
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
+
+        # for name in self.threads:
+        #     t = self.threads[name]
+        #     if t is None:
+        #         continue
+        #     t.Deactivate()
+        #     debug(self.logger,
+        #           f"Deactivating {name} thread...",
+        #           level=spdlog.LogLevel.TRACE,
+        #           color=TermColor.Yellow)
+        #
+        # for name in self.threads:
+        #     t = self.threads[name]
+        #     if t is None:
+        #         continue
+        #     t.join(timeout=10)
+        #
+        #     if t.is_alive():
+        #         debug(self.logger, f"Failed to terminate CAN bus {name} thread!", level=spdlog.LogLevel.CRITICAL)
+        #
+        # debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
 
     def get_bus_setup(self):
         return self.cfg["CANBUS_CONFIG"]
@@ -243,25 +258,27 @@ class CanbusDevice(Component):
         params = self.cfg["Parameters"]
         for p in params:
             can_msg_id = int(params[p]["id"])
-            if can_msg_id == msgid:
-                values = params[p]["values"]
-                mode = params[p]["mode"]
-                for v in values:
-                    val = []
-                    # for i in range(int(v["index"]), int(v["index"]) + int(v["size"])):
-                    #     pass
-                    start_index = values[v]["index"]
-                    end_index = start_index + values[v]["size"]
-                    for i in range(start_index, end_index):
-                        val.append(data[i])
-                    # convert to float ( tuple )
-                    self.logger.info(f"what is val: {val}")
-                    cvtval = struct.unpack(values[v]["format"], bytearray(val))
-                    self.logger.info(f"what is cvtval: {cvtval}")
-                    # apply scaling
-                    cvtval = float(cvtval[0])
-                    cvtval /= int(values[v]["scaler"])
-                    result.append({"name": v, "value": cvtval, "units": values[v]["units"]})
+            if can_msg_id is not msgid:
+                continue
+            # if can_msg_id == msgid:
+            values = params[p]["values"]
+            mode = params[p]["mode"]
+            for v in values:
+                val = []
+                # for i in range(int(v["index"]), int(v["index"]) + int(v["size"])):
+                #     pass
+                start_index = values[v]["index"]
+                end_index = start_index + values[v]["size"]
+                for i in range(start_index, end_index):
+                    val.append(data[i])
+                # convert to float ( tuple )
+                self.logger.info(f"what is val: {val}")
+                cvtval = struct.unpack(values[v]["format"], bytearray(val))
+                self.logger.info(f"what is cvtval: {cvtval}")
+                # apply scaling
+                cvtval = float(cvtval[0])
+                cvtval /= int(values[v]["scaler"])
+                result.append({"name": v, "value": cvtval, "units": values[v]["units"]})
         return mode, result
 
 # riaps:keep_impl:end
