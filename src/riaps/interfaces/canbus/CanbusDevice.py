@@ -11,7 +11,7 @@ from riaps.run.comp import Component
 from riaps.interfaces.canbus.libs.CanbusNode import CanbusEventNode, CanbusCommandNode, CanbusControl, CanbusHeartBeat
 from riaps.interfaces.canbus.libs.Debug import debug
 import riaps.interfaces.canbus.libs.Terminal as TermColor
-
+from riaps.interfaces.canbus.utils import build_command
 
 # riaps:keep_import:end
 class CanbusDevice(Component):
@@ -113,7 +113,7 @@ class CanbusDevice(Component):
             else:
                 done = True
                 # signal components that threads and connections are in active
-        value = ("config", self.cfg)
+        value = ("config", self.cfg["Description"])
         self.event_can_pub.send_pyobj(value)  # riaps pub port
         # publish config to other components because the message parameters are used to construct messages.
         debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
@@ -150,13 +150,10 @@ class CanbusDevice(Component):
     def on_canbusqryans(self):
         qryriaps = self.canbusqryans.recv_pyobj()  # riaps ans port
 
-        (arbitration_id, dta, rtr, ext) = qryriaps
-        self.arbitration_id = arbitration_id
         self.query_response_time["start"] = dt.datetime.now()
         self.sendmsg = qryriaps
-        debug(self.logger, f"Driver->CANBus:Query {arbitration_id, dta}", level=spdlog.LogLevel.TRACE)
 
-        self.send_canbus_msg(qryriaps)
+        self.arbitration_id = self.send_canbus_msg(qryriaps)
 
         self.timeout.setDelay(self.canbus_timeout)  # riaps sporadic timer
         self.timeout.launch()  # riaps sporadic timer
@@ -166,7 +163,6 @@ class CanbusDevice(Component):
     def on_command_can_sub(self):
         cmdriaps = self.command_can_sub.recv_pyobj()  # riaps sub port
         self.send_canbus_msg(cmdriaps)
-        debug(self.logger, f"Driver->CANBus:{cmdriaps}", level=spdlog.LogLevel.TRACE)
     # riaps:keep_command_can_sub:end
 
     # riaps:keep_timeout:begin
@@ -181,7 +177,8 @@ class CanbusDevice(Component):
     # riaps:keep_impl:begin
 
     def send_canbus_msg(self, msg):
-        (arbitration_id, dta, rtr, ext) = msg
+        cmd, vals = msg
+        arbitration_id, mode, dta, rtr, ext = build_command(cfg=self.cfg, cmd=cmd, msg_vals=vals)
         cmdmsg = can.Message(timestamp=dt.datetime.timestamp(dt.datetime.now()),
                              dlc=len(dta),
                              arbitration_id=arbitration_id,
@@ -192,6 +189,8 @@ class CanbusDevice(Component):
         # TODO: What is the purpose of this "set_identity"?
         #  If it is removed I get a "Driver communication timeout triggered"
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
+        debug(self.logger, f"Driver->CANBus:{mode} {self.arbitration_id, dta}", level=spdlog.LogLevel.TRACE)
+        return arbitration_id
 
     def __destroy__(self):
 
