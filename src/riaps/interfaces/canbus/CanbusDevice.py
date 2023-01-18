@@ -220,7 +220,7 @@ class CanbusDevice(Component):
         Convert data to CAN message format
         :param msgid:
         :param data:
-        :return: returns a tuple with mode and dictionaries in the form { name, value, units }
+        :return: returns a tuple with mode and a list of dictionaries in the form [{ name, value, units }, ...]
         """
         mode = None
         result = []
