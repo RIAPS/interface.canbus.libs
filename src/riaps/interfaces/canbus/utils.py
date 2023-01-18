@@ -65,6 +65,6 @@ def build_command(cfg, cmd, msg_vals):
             data[index + i] = integer_data[i]
             i += 1
 
-        sendcmd = (id, data, rtr, ext)
+        sendcmd = (id, mode, data, rtr, ext)
 
     return sendcmd
