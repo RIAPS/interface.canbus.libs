@@ -113,7 +113,7 @@ class CanbusDevice(Component):
             else:
                 done = True
                 # signal components that threads and connections are in active
-        value = ("config", [self.cfg, ])
+        value = ("config", self.cfg)
         self.event_can_pub.send_pyobj(value)  # riaps pub port
         # publish config to other components because the message parameters are used to construct messages.
         debug(self.logger, f"handleActivate() complete", level=spdlog.LogLevel.INFO)
