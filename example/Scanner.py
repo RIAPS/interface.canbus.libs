@@ -17,10 +17,9 @@ class Scanner(Component):
     def __init__(self):
         super(Scanner, self).__init__()
         self.comms_up = False
-        self.Parameters = None
+        # self.Parameters = None
         self.read_parms = False
         self.config = None
-        self.Parameters = None
         self.debug_level = 10
         self.logger.set_level(spdlog.LogLevel.TRACE)
         debug(self.logger, f"__init__() complete", level=spdlog.LogLevel.INFO)
@@ -40,24 +39,24 @@ class Scanner(Component):
 
     # riaps:keep_event_can_sub:begin
     def on_event_can_sub(self):
-        canmsg = self.event_can_sub.recv_pyobj()
-        msgtype, msg = canmsg
+        msgtype, msg = self.event_can_sub.recv_pyobj()
 
         if not self.comms_up:
             # the lower level driver code must send a "config" message
             # the config message includes the configuration dictionary
             # with all configured parameters
+            # TODO: why?
             if msgtype != "config":
                 return
 
-            self.config = msg
-            self.Parameters = self.config["Parameters"]
-            self.logger.set_level(self.config["Debuglevel"])
+            # self.config = msg
+            # self.Parameters = self.config["Parameters"]
+            # self.logger.set_level(self.config["Debuglevel"])
 
-            newmsg = (msgtype, [self.Parameters, ])
-            self.config_signal_pub.send_pyobj(newmsg)
+            # newmsg = (msgtype, [self.Parameters, ])
+            # self.config_signal_pub.send_pyobj(newmsg)  # TODO: Why did this exist?
             self.comms_up = True
-            dvc = self.config["Description"]
+            dvc = msg
             debug(self.logger,
                   f"{dvc} is configured and communication active.",
                   level=spdlog.LogLevel.INFO,
@@ -83,9 +82,10 @@ class Scanner(Component):
     def on_periodic(self):
         now = self.periodic.recv_pyobj()
         if self.comms_up:
-            (cmd, vals) = ("PowerLimit=", {"p1": 12.34, "p2": 56.0})
-            sendcmd = build_command(self.config, cmd, vals)
-            self.canbusqryans.send_pyobj(sendcmd)
+            # (cmd, vals) = ("PowerLimit=", {"p1": 12.34, "p2": 56.0})
+            # sendcmd = build_command(self.config, cmd, vals)
+            cmd = ("PowerLimit=", {"p1": 12.34, "p2": 56.0})
+            self.canbusqryans.send_pyobj(cmd)
             debug(self.logger,
                   f"Periodic timer sending command: {cmd}",
                   level=spdlog.LogLevel.TRACE)
