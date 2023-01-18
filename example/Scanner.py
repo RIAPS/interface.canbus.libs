@@ -2,8 +2,9 @@
 from riaps.run.comp import Component
 import spdlog
 import capnp
-from interfaces.canbus.libs import Terminal as tc
-from interfaces.canbus.libs.Debug import debug
+from riaps.interfaces.canbus.libs import Terminal as tc
+from riaps.interfaces.canbus.libs.Debug import debug
+from riaps.interfaces.canbus.utils import build_command
 import struct
 import res.Defines as defs
 
@@ -85,7 +86,7 @@ class Scanner(Component):
         now = self.periodic.recv_pyobj()
         if self.comms_up:
             (cmd, vals) = ("PowerLimit=", {"p1": 12.34, "p2": 56.0})
-            sendcmd = self.build_command(cmd, vals)
+            sendcmd = build_command(self.config, cmd, vals)
             self.canbusqryans.send_pyobj(sendcmd)
             debug(self.logger,
                   f"Periodic timer sending command: {cmd}",
@@ -107,76 +108,6 @@ class Scanner(Component):
 
     def __destroy__(self):
         debug(self.logger, f"__destroy__() complete", level=spdlog.LogLevel.INFO)
-
-    def build_command(self, cmd, vals):
-        # todo: this doesn't seem like it belongs here. Seems more like it should be an imported utility function
-        sendcmd = (-1, [], False, False)
-        for p in self.Parameters:
-            if p.find(cmd) != -1:
-                mode = self.Parameters[p]["mode"]
-                if mode == "command" or mode == "query":
-                    id = int(self.Parameters[p]["id"])
-                    len = int(self.Parameters[p]["dlen"])
-                    rtr = bool(self.Parameters[p]["remote"])
-                    ext = bool(self.Parameters[p]["extended"])
-                    values = self.Parameters[p]["values"]
-                    data = [0] * len
-                    # vals = [ {"p1": 12.34}, {"p2": 56.0} ]
-                    # vals = {"p1": 12.34, "p2": 56.0}
-                    for v in values:
-                        name = v
-                        for d in vals:  # {"p1": 12.34}
-                            k = list(d.keys())[0]  # p1
-                            if k == name:
-                                newval = float(d[k])  # 12.34
-                                index = int(v["index"])
-                                size = int(v["size"])
-                                scaler = int(v["scaler"])
-                                units = v["units"]
-                                format = v["format"]
-
-                                if size == 1:
-                                    f = "B"
-                                elif size == 2:
-                                    f = "BB"
-                                elif size == 4:
-                                    f = "BBBB"
-                                elif size == 8:
-                                    f = "BBBBBBBB"
-
-                                if format.find("f") >= 0:
-                                    newval = newval * scaler
-                                else:
-                                    newval = int(newval * scaler)
-                                    if format.find("H") >= 0:
-                                        if newval > defs.MAX_H:
-                                            sendcmd = (-2, [newval, format], rtr, ext)
-                                    elif format.find("I") >= 0:
-                                        if newval > defs.MAX_I:
-                                            sendcmd = (-3, [newval, format], rtr, ext)
-                                    elif format.find("L") >= 0:
-                                        if newval > defs.MAX_L:
-                                            sendcmd = (-4, [newval, format], rtr, ext)
-                                    elif format.find("Q") >= 0:
-                                        if newval > defs.MAX_Q:
-                                            sendcmd = (-5, [newval, format], rtr, ext)
-                                    else:
-                                        pass
-
-                                (w, x, y, z) = sendcmd
-                                if w >= -1:
-                                    frame = struct.pack(format, newval)
-                                    integer_data = struct.unpack(f, frame)
-                                    i = 0
-                                    for b in integer_data:
-                                        data[index + i] = integer_data[i]
-                                        i = i + 1
-                                else:
-                                    return sendcmd
-
-                    sendcmd = (id, data, rtr, ext)
-                    break
-        return sendcmd
 
     def build_error(self, msg, errtype="general"):
         return "error", [{"module": self.getName(), "type": errtype, "message": msg}, ]
