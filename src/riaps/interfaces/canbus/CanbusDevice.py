@@ -189,7 +189,7 @@ class CanbusDevice(Component):
         # TODO: What is the purpose of this "set_identity"?
         #  If it is removed I get a "Driver communication timeout triggered"
         self.canport.send_pyobj(cmdmsg)  # riaps inside port
-        debug(self.logger, f"Driver->CANBus:{mode} {self.arbitration_id, dta}", level=spdlog.LogLevel.TRACE)
+        debug(self.logger, f"Driver->CANBus:{mode} {arbitration_id, dta}", level=spdlog.LogLevel.TRACE)
         return arbitration_id
 
     def __destroy__(self):
