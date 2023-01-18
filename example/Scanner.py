@@ -41,35 +41,33 @@ class Scanner(Component):
     # riaps:keep_event_can_sub:begin
     def on_event_can_sub(self):
         canmsg = self.event_can_sub.recv_pyobj()
-        (msgtype, msg) = canmsg
+        msgtype, msg = canmsg
 
         if not self.comms_up:
             # the lower level driver code must send a "config" message
             # the config message includes the configuration dictionary
             # with all configured parameters
-            if msgtype == "config":
-                for d in msg:
-                    self.config = d
-                    self.Parameters = self.config["Parameters"]
-                    self.logger.set_level(self.config["Debuglevel"])
+            if msgtype != "config":
+                return
 
-                    newmsg = (msgtype, [self.Parameters, ])
-                    self.config_signal_pub.send_pyobj(newmsg)
-                    self.comms_up = True
-                    dvc = self.config["Description"]
-                    debug(self.logger,
-                          f"{dvc} is configured and communication active.",
-                          level=spdlog.LogLevel.INFO,
-                          color=tc.Purple)
-            else:
-                pass
+            self.config = msg
+            self.Parameters = self.config["Parameters"]
+            self.logger.set_level(self.config["Debuglevel"])
+
+            newmsg = (msgtype, [self.Parameters, ])
+            self.config_signal_pub.send_pyobj(newmsg)
+            self.comms_up = True
+            dvc = self.config["Description"]
+            debug(self.logger,
+                  f"{dvc} is configured and communication active.",
+                  level=spdlog.LogLevel.INFO,
+                  color=tc.Purple)
         else:
             # after initialization CAN messages are received here
             # then publish an event or answer a response
             txt = f"Driver->Scanner:Posted:{msgtype}"
             debug(self.logger, txt, level=spdlog.LogLevel.INFO, color=tc.Yellow)
-            for d in msg:
-                debug(self.logger, f"Message entry->{d}", level=spdlog.LogLevel.INFO, color=tc.White)
+            debug(self.logger, f"Message entry->{msg}", level=spdlog.LogLevel.INFO, color=tc.White)
 
     # riaps:keep_event_can_sub:end
 
