@@ -44,8 +44,8 @@ def test_cli():
     c = Controller(port=8888, script="-")
 
     if True:
-        required_clients = ['172.21.20.40',
-                            '172.21.20.50']
+        required_clients = ['172.21.20.45',
+                            '172.21.20.55']
         app_folder = "/home/riaps/projects/RIAPS/interface.canbus.libs/example"
         c.setAppFolder(app_folder)
         app_name = c.compileApplication("canbus_example.riaps", app_folder)

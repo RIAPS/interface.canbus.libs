@@ -1,5 +1,51 @@
 # CAN bus device interface for RIAPS
 
+## Overview
+The library provides a device component implementation of canbus for the RIAPS platform.
+An example of an application using this library is found in the `example` folder.
+The designed use model is to include in the (dot)riaps application specification file a device component with the following content in addition to other elements required by the application:
+
+```text
+message CANQry;
+message CANAns;
+message CANCommands;
+message CANEvents;
+device Driver(config)
+    {
+        ans canbusqryans: (CANQry, CANAns) timed;
+        inside canport;
+        sub command_can_sub : CANCommands ;			// subscribe port for CAN commands
+        timer timeout;
+        pub event_can_pub : CANEvents ;				// Publish port for CAN events
+    }
+component Example()
+    {
+        qry canbusqryans: (CANQry, CANAns) timed;
+        pub command_can_pub: CANCommands;
+    }
+```
+Note: The device name `Driver` may be changed, however the ports and messages are required as shown. 
+
+The usage also requires a yaml configuration file for each device. An example can be found [here](https://github.com/RIAPS/interface.canbus.libs/blob/package/example/cfg/bbb_canbus_example.yaml).
+
+## Interfaces
+The format for send these messages is a set consisting of the **Parameter** of interest and a dictionary of that parameters values. In the provided [example](https://github.com/RIAPS/interface.canbus.libs/tree/package/example) to send and format a query message to the canbus to write to the `PowerLimit` parameter one can use the following syntax:
+```python
+self.canbusqryans.send_pyobj("PowerLimit=", {"p1": 12.34, "p2": 56.0})
+```
+The format of the message returned from the qry interface is a list of dictionaries of the form 
+```python
+[{ "name", "value", "units" }, ...]
+```
+
+For and example of each interface refer back to the above example.
+* To send asynchronous query messages (see the `Example` component) to the canbus use the `canbusqryans` port. 
+* To publish command messages (see the `Example` component) to the canbus use the`command_can_pub` port. 
+
+
+* When there is a device event it is published on the `event_can_pub` port. The events included in this library are canbus communication timeouts, responses to published commands, and a messages when a device has been configured.  
+
+# Installation
 ## Install canbus utils
 ```commandline
 sudo apt install can-utils
@@ -53,23 +99,22 @@ Note: These instructions were created using a [BeagleBone Comms Cape](https://ww
    1. GND -- GND
 2. Power on the boards
 3. On the RPi run: `candump can0`
-4. On the BBB run: `cansend can0 456#00FFAA5501020305`
+4. On the BBB run: `cansend can1 456#00FFAA5501020305`
 5. The RPi should write the following message to the terminal:
 ```
 can1  456   [8]  00 FF AA 55 01 02 03 05
 ```
 A similar test can be done, running `candump` and `cansend` on the same board, but the wired connection to another board needs to be present.
 
+# Library tests
+To run the included test example the `interface.canbus.libs/example/canbus_example.depl` and `required_clients` in `interface.canbus.libs/tests/test_canbus.py` must be updated to reflect your canbus device ip address. Then tests can be run with:
+```commandline
+pytest -s .
+```
+
+
 # Application Developer Notes
-
-An application using this module requires a YAML file which provides settings for:
-* Bus device name
-* Bus speed
-* Request Message IDs
-* Published Message IDs
-
-[Sample configuration file](https://github.com/RIAPS/interface.canbus.apps/tree/main/CANApp/cfg/sample.yaml) is located in the CANApp example.
-
+The canbus device configuration YAML file must be defined on a per-device basis. The developer must create a class that inherits the `CanbusDevice` class. No additional behavior is required but the class may be extended as needed.  
 
 # Troubleshooting
 
@@ -101,128 +146,11 @@ A: This is because when the Comms cape A2 is attached its overlay is loaded and 
 ```
 
 # Package Notes
-
-* I'm not sure if the `__init__.py` file under `interfaces` is required.
-* used `[tool.setuptools.packages.find]` because otherwise only interfaces is imported. 
 * Cannot use editable packages for riaps components because they do not have access. 
 
+# Notes
+[Examples of canbus database files](https://github.com/commaai/opendbc)
 
-# Ignore below
-
-##### CAN bus message format
-
-      message
-      (
-         timestamp,                  
-         arbitration_id,             
-         is_extended_id,             
-         is_remote_frame,            
-         is_error_frame,             
-         channel,                    
-         dlc,                        
-         data,                       
-         is_fd,                      
-         bitrate_switch,             
-         error_state_indicator
-      )
-
-The message structure is found in the [python-can project](https://github.com/hardbyte/python-can).
-
-
-During normal operation, the CAN driver passes the python-can message structure to the RIAPS driver module via the inside port mechanism. Upon receiving the message
-the driver then posts the message as an EVENT or ANSWER-to-QUERY.   
-
-[A simplistic diagram of the driver](https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png)   
-
-
-
-The sample CANApp is defined as follows:
-
-https://github.com/RIAPS/interface.canbus.apps/blob/main/CANApp/CANApp.riaps
-
-        app CANApp
-        {
-	        message CANQry;
-	        message CANAns;
-	        message CmdQry;
-	        message CmdAns;
-	        message CANCommands;
-	        message CANEvents;
-	        message CANControl;
-	        message LogMessages;
-	        message CmdMessages;
-	        message CmdEvents;
-	        message CfgSignal;
-
-	        library cfg;
-	        library canbuslibs;
-	        library res;
-
-	        component DataLogger()
-	        {
-      	        sub data_logging_sub : LogMessages;			// Receive logging messages		
-      	        sub config_signal_sub : CfgSignal;	
-	        }
-		
-	        component Commander()
-	        scheduler priority;
-	        {
-		        qry cmdqryans: (CmdQry, CmdAns) timed;
-      	        pub data_logging_pub : LogMessages;			// publish logging messages	
-      	        pub command_injector_pub : CmdMessages;		// Send cmd receive test commands	
-      	        sub config_signal_sub : CfgSignal;	
-		        sub cmd_events_sub : CmdEvents;
-		        timer cmdtimer 5000;
-	        }	
-	
-	        // component
-            component Scanner() 
-	        scheduler priority;
-            {
-		        ans cmdqryans: (CmdQry, CmdAns) timed;
-		        qry canbusqryans: (CANQry, CANAns) timed;
-      	        sub event_can_sub : CANEvents ;				// subscribe port for CAN events
-      	        sub command_injector_sub : CmdMessages;		
-      	        pub command_can_pub : CANCommands ;			// publish port for CAN commands
-      	        pub data_logging_pub : LogMessages;			// publish logging messages		
-      	        pub config_signal_pub : CfgSignal;
-		        pub cmd_events_pub : CmdEvents;
-		        timer oneshot 2500;
-		        timer periodic 5000;
-            }
-	
-            device Driver(config) 
-            {
-    	        inside canport;
-    	        timer timeout 1000;
-       	        sub command_can_sub : CANCommands ;			// subscribe port for CAN commands
-      	        pub event_can_pub : CANEvents ;				// Publish port for CAN events
-		        ans canbusqryans: (CANQry, CANAns) timed;
-            }
-	
-	        actor CANBus(config) 
-	        {
-		        local CANCommands, CANEvents, CANControl, CANQry, CANAns;
-		        { 
-			        scanner : Scanner();
-			        driver  : Driver(config=config);
-		        }
-	        }
-	
-	        actor CANLogger()
-	        {
-		        {
-			        can_logger : DataLogger();
-		        }
-	        }	
-	
-	        actor Injector()
-	        {
-		        {
-			        Injector : Commander();
-		        }
-	        }	
-	
-        }
+[A simplistic diagram of the driver](https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png)
         
 
