@@ -138,10 +138,9 @@ class CanbusDevice(Component):
                   f"time:{self.query_response_time} "
                   f"current timeout: {self.canbus_timeout}",
                   level=spdlog.LogLevel.TRACE)
-            # TODO: I thought query_id was incremented on each message. Nope.
+            # TODO: I thought arbitration_id (formerly query_id) was incremented on each message. Nope.
             #  canbus uses to prioritize which message is sent... and calls it
-            #  an arbitration_id. I'm not sure what, if any, purpose comparing the
-            #  the arbitration_id against self.arbitration_id has.
+            #  an arbitration_id. The id must be unique on the can bus.
         else:
             self.event_can_pub.send_pyobj(value)  # riaps pub port
             debug(self.logger, f"Canbus->Driver:Event:{(msg.arbitration_id, dl)}", level=spdlog.LogLevel.TRACE)
