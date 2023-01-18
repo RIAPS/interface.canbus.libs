@@ -152,5 +152,6 @@ A: This is because when the Comms cape A2 is attached its overlay is loaded and 
 [Examples of canbus database files](https://github.com/commaai/opendbc)
 
 [A simplistic diagram of the driver](https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png)
-        
 
+# Roadmap
+* isolate canbus functionality from riaps specific requirements.
