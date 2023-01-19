@@ -38,7 +38,7 @@ The format of the message returned from the qry interface is a list of dictionar
 [{ "name", "value", "units" }, ...]
 ```
 
-For and example of each interface refer back to the above example.
+For an example of each interface refer back to the above example.
 * To send asynchronous query messages (see the `Example` component) to the canbus use the `canbusqryans` port. 
 * To publish command messages (see the `Example` component) to the canbus use the`command_can_pub` port. 
 
@@ -155,3 +155,8 @@ A: This is because when the Comms cape A2 is attached its overlay is loaded and 
 
 # Roadmap
 * isolate canbus functionality from riaps specific requirements.
+* test remaining interfaces
+  * command_can_pub
+  * event_can_pub
+  * timeout
+* explain the canbus simulator in `tests/simulator`. 
