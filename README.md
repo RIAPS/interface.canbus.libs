@@ -50,6 +50,12 @@ For an example of each interface refer back to the above example.
 ```commandline
 sudo apt install can-utils
 ```
+## Install RIAPS canbus library
+```commandline
+git clone https://github.com/RIAPS/interface.canbus.libs
+cd interface.canbus.libs
+sudo python3 -m pip install .
+```
 
 ## Configure and enable CANBUS interface.
 * Check that CAN interfaces are available. Note that while a Beaglebone black has the capability to support two CAN interfaces (can0 and can1) the default pin configuration only works for can1. A raspberry pi uses can0. 
