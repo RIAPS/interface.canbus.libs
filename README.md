@@ -54,6 +54,7 @@ sudo apt install can-utils
 ```commandline
 git clone https://github.com/RIAPS/interface.canbus.libs
 cd interface.canbus.libs
+git checkout package
 sudo python3 -m pip install .
 ```
 
