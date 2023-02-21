@@ -1,9 +1,7 @@
-# CAN bus device interface for RIAPS
+# CAN Bus Device Interface for RIAPS
 
 ## Overview
-The library provides a device component implementation of canbus for the RIAPS platform.
-An example of an application using this library is found in the `example` folder.
-The designed use model is to include in the (dot)riaps application specification file a device component with the following content in addition to other elements required by the application:
+The library provides a device component implementation of CAN bus for the RIAPS platform. An example of an application using this library is found in the [`example` folder](https://github.com/RIAPS/interface.canbus.libs/tree/main/example). The designed use model is to include in the (dot)riaps application specification file a device component with the following content in addition to other elements required by the application:
 
 ```text
 message CANQry;
@@ -24,33 +22,33 @@ component Example()
         pub command_can_pub: CANCommands;
     }
 ```
-Note: The device name `Driver` may be changed, however the ports and messages are required as shown. 
+>Note: The device named `Driver` may be changed, however the ports and messages are required as shown. 
 
-The usage also requires a yaml configuration file for each device. An example can be found [here](https://github.com/RIAPS/interface.canbus.libs/blob/package/example/cfg/bbb_canbus_example.yaml).
+The usage also requires a yaml configuration file for each device. An example can be found [here](https://github.com/RIAPS/interface.canbus.libs/blob/main/example/cfg/bbb_canbus_example.yaml).
 
 ## Interfaces
-The format for send these messages is a set consisting of the **Parameter** of interest and a dictionary of that parameters values. In the provided [example](https://github.com/RIAPS/interface.canbus.libs/tree/package/example) to send and format a query message to the canbus to write to the `PowerLimit` parameter one can use the following syntax:
+The format to send these messages is a set consisting of the **Parameter** of interest and a dictionary of that parameters values. In the provided [example](https://github.com/RIAPS/interface.canbus.libs/tree/main/example), the following is an example of sending and formatting a query message for the CAN bus to write the `PowerLimit` parameter:
+
 ```python
 self.canbusqryans.send_pyobj("PowerLimit=", {"p1": 12.34, "p2": 56.0})
 ```
-The format of the message returned from the qry interface is a list of dictionaries of the form 
+
+The format of the message returned from the qry interface is a list of dictionaries of the form:
 ```python
 [{ "name", "value", "units" }, ...]
 ```
 
 For an example of each interface refer back to the above example.
-* To send asynchronous query messages (see the `Example` component) to the canbus use the `canbusqryans` port. 
-* To publish command messages (see the `Example` component) to the canbus use the`command_can_pub` port. 
-
-
-* When there is a device event it is published on the `event_can_pub` port. The events included in this library are canbus communication timeouts, responses to published commands, and a messages when a device has been configured.  
+* To send asynchronous query messages to the CAN bus use the `canbusqryans` port. 
+* To publish command messages to the CAN bus use the `command_can_pub` port. 
+* When there is a device event, it is published on the `event_can_pub` port. The events included in this library are CAN bus communication timeouts, responses to published commands, and a messag when a device has been configured.  
 
 # Installation
-## Install canbus utils
+## Install CAN Bus Utils
 ```commandline
 sudo apt install can-utils
 ```
-## Install RIAPS canbus library
+## Install RIAPS CAN Bus Library
 ```commandline
 git clone https://github.com/RIAPS/interface.canbus.libs
 cd interface.canbus.libs
@@ -58,8 +56,8 @@ git checkout package
 sudo python3 -m pip install .
 ```
 
-## Configure and enable CANBUS interface.
-* Check that CAN interfaces are available. Note that while a Beaglebone black has the capability to support two CAN interfaces (can0 and can1) the default pin configuration only works for can1. A raspberry pi uses can0. 
+## Configure and Enable CAN Bus Interface.
+* Check that CAN bus interfaces are available. Note that while a Beaglebone Black has the capability to support two CAN bus interfaces (can0 and can1), the default pin configuration only works for can1. A raspberry pi uses can0. 
 ```commandline
 $ ip addr
 3: can1: <NOARP,ECHO> mtu 16 qdisc noop state DOWN group default qlen 10
@@ -88,7 +86,8 @@ RequiredForOnline=no
 BitRate=500K
 RestartSec=500ms
 ```
-Reboot. Note: You may have to wait ~10 seconds for the `state` to be `UP`.
+Reboot. 
+>Note: You may have to wait ~10 seconds for the `state` to be `UP`.
 ```commandline
 $ ip addr
 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP group default qlen 10
@@ -97,8 +96,8 @@ $ ip addr
     link/can 
 ```
 
-## Test that CANBUS interfaces are functional
-Note: These instructions were created using a [BeagleBone Comms Cape](https://www.digikey.com/en/products/detail/ghi-electronics-llc/COMCPE-BBBCAPE/8567318) for BBB and a raspberry pi 3b+ with the [PiCAN2 CAN-Bus Board]. To use a raspberry pi 4 a PiCAN3 is required and may necessitate other changes. 
+## Test that CAN Bus Interfaces are Functional
+>Note: These instructions were created using a [BeagleBone Comms Cape](https://www.digikey.com/en/products/detail/ghi-electronics-llc/COMCPE-BBBCAPE/8567318) for BBB and a raspberry pi 3b+ with the [PiCAN2 CAN-Bus Board]. To use a raspberry pi 4, a PiCAN3 is required and may necessitate other changes. 
 
 1. With the boards powered off, connect with wires the RPi and BBB capes.
    1. CAN_H -- CAN_H
@@ -113,15 +112,19 @@ can1  456   [8]  00 FF AA 55 01 02 03 05
 ```
 A similar test can be done, running `candump` and `cansend` on the same board, but the wired connection to another board needs to be present.
 
-# Library tests
-To run the included test example the `interface.canbus.libs/example/canbus_example.depl` and `required_clients` in `interface.canbus.libs/tests/test_canbus.py` must be updated to reflect your canbus device ip address. Then tests can be run with:
+# Application Developer Notes
+The CAN bus device configuration YAML file must be defined on a per-device basis. The developer must create a class that inherits the `CanbusDevice` class. No additional behavior is required but the class may be extended as needed.  
+
+# Tests for Library Developers
+When installing this package, use the following command to include additional testing packages:
 ```commandline
-pytest -s .
+sudo python3 -m pip install .[dev]
 ```
 
-
-# Application Developer Notes
-The canbus device configuration YAML file must be defined on a per-device basis. The developer must create a class that inherits the `CanbusDevice` class. No additional behavior is required but the class may be extended as needed.  
+To run the included test example, the `interface.canbus.libs/example/canbus_example.depl` and `required_clients` in `interface.canbus.libs/tests/test_canbus.py` must be updated to reflect your CAN bus device ip address. Then tests can be run with:
+```commandline
+pytest -s -v .
+```
 
 # Troubleshooting
 
@@ -136,13 +139,9 @@ $ dmesg | grep -i can
 [   97.135663] c_can_platform 481d0000.can can1: bit-timing not yet defined
 [   97.135698] c_can_platform 481d0000.can can1: failed to open can device
 ```
-Note: The overlay used by the Comms cape A2 can be found at `/opt/source/dtb-5.10-ti/src/arm/overlays/BBORG_COMMS-00A2.dts` and is part of the ubuntu distribution. 
+>Note: The overlay used by the Comms cape A2 can be found at `/opt/source/dtb-5.10-ti/src/arm/overlays/BBORG_COMMS-00A2.dts` and is part of the ubuntu distribution. 
 
-Note:  
-The Comms cape A2 overlay is part of the ubuntu distribution and is loaded by the `/boot/uEnv.txt` by the line:
-```
-enable_uboot_cape_universal=1
-```
+>Note:  The Comms cape A2 overlay is part of the ubuntu distribution and is loaded by the `/boot/uEnv.txt` by the line: `enable_uboot_cape_universal=1`
 
 Q: The `config-pin` commands do not work for `p9.24` and `p9.26`?
 
@@ -156,14 +155,14 @@ A: This is because when the Comms cape A2 is attached its overlay is loaded and 
 * Cannot use editable packages for riaps components because they do not have access. 
 
 # Notes
-[Examples of canbus database files](https://github.com/commaai/opendbc)
+[Examples of CAN bus database files](https://github.com/commaai/opendbc)
 
 [A simplistic diagram of the driver](https://github.com/RIAPS/interface.canbus.apps/blob/main/Images/CANbus%20App.png)
 
 # Roadmap
-* isolate canbus functionality from riaps specific requirements.
-* test remaining interfaces
+* Isolate CAN bus functionality from riaps specific requirements.
+* Test remaining interfaces
   * command_can_pub
   * event_can_pub
   * timeout
-* explain the canbus simulator in `tests/simulator`. 
+* Explain the CAN bus simulator in `tests/simulator`. 
