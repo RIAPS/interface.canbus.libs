@@ -1,0 +1,192 @@
+---
+Name: BATT1
+Description: BATTERY CHARGER
+CANBUS_CONFIG:
+   # Name of network interface per ip addr | grep can
+   # Called "channel" in pycan library.
+   channel: can0
+   # CAN bus speed, in Hertz
+   speed: 500000
+   # hardware level filter to reduce data processing
+   filters:
+      # set can_id=0x000 and can_mask=0x000 to receive all messages
+      - {"can_id": 0x001, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x002, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x003, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x004, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x005, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x006, "can_mask": 0x3FF, "extended": False}
+      - {"can_id": 0x007, "can_mask": 0x3FF, "extended": False}
+
+   do_can_up: True  #if the OS starts the CAN bus this can be set to False
+   timeout: 0.25  # seconds
+   # anecdotally (on my bbb) the response time was 19ms
+   # This means that the canbus device cannot be queried faster than this rate.
+
+# RIAPS neighbors
+Neighbors: []
+#### Control the level of debug messages ####
+# 5=CRIT,
+# 4=CRIT+ERR,
+# 3=CRIT+ERR+WARN,
+# 2=CRIT+ERR+WARN+INFO,
+# 1=CRIT+ERR+WARN+INFO+DEBUG,
+# 0=ALL
+Debuglevel: 0
+
+# define any hearbeat that should be updated automatically
+Heartbeat:
+   freq: 8.0   #hz
+   id: 0x001
+   dlen: 8
+   remote: False
+   extended: False
+   # value entries describe the data location and format as read or written on the CAN bus
+   data: [1,2,3,4,5,6,7,8]
+   event: 799.0 > HB > 801.0
+# Parameter mapping for each allowed CAN message ID
+Parameters:
+   BatteryInfo:
+      mode: event
+      id: 0x001
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as read from the CAN device
+      values:
+         "Current":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": "Amperes"
+            "format": ">f"
+         "Temperature":
+            "index": 4
+            "size": 2
+            "scaler": 10
+            "units": "Celcius"
+            "format": ">h"
+         "Voltage":
+            "index": 6
+            "size": 2
+            "scaler": 10
+            "units": "Volts"
+            "format": ">H"
+   BatteryState:
+      mode: event
+      id: 0x002
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as read from the CAN device
+      values:
+         "Cycles":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": ""
+            "format": ">f"
+         "Charge":
+            "index": 4
+            "size": 2
+            "scaler": 10
+            "units": "Percent"
+            "format": ">H"
+   CurrentLimit:
+      mode: response
+      id: 0x003
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as read from the CAN device
+      values:
+         "Current":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": "Amps"
+            "format": ">f"
+   CurrentLimit=:
+      mode: command
+      id: 0x004
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as written to the CAN device
+      values:
+         "t1":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": "Amps"
+            "format": ">f"
+         "t2":
+            "index": 4
+            "size": 2
+            "scaler": 10
+            "units": "Amps"
+            "format": ">H"
+   VoltageLimit=:
+      mode: command
+      id: 0x005
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as written to the CAN device
+      values:
+         "v1":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": "Amps"
+            "format": ">f"
+         "v2":
+            "index": 4
+            "size": 2
+            "scaler": 10
+            "units": "Amps"
+            "format": ">H"
+   PowerLimit=:
+      mode: query
+      id: 0x006
+      dlen: 8
+      remote: False
+      extended: False
+      # value entries describe the data location and format as written to the CAN device
+      values:
+         "p1":
+            "index": 0
+            "size": 4
+            "scaler": 1
+            "units": "Watts"
+            "format": ">f"
+         "p2":
+            "index": 4
+            "size": 4
+            "scaler": 1
+            "units": "Watts"
+            "format": ">f"
+#
+#
+# Data formatting specifiers as defined in python struct module
+#
+#
+#  Format   C Type               Python type  		Standard size
+#  x	      pad 			         byte			      
+#  c	      char			         byte	            1
+#  b	      signed char		      integer		      1
+#  B	      unsigned char	      integer		      1
+#  ?	      _Bool			         bool			      1
+#  h	      short			         integer		      2
+#  H	      unsigned short	      integer		      2
+#  i	      int			         integer		      4
+#  I	      unsigned int	      integer		      4
+#  l	      long			         integer		      4
+#  L	      unsigned long	      integer		      4
+#  q	      long long		      integer		      8
+#  Q	      unsigned long long	integer		      8
+#  n	      ssize_t			      integer		       
+#  N	      size_t			      integer		       
+#  f	      float			         float			      4
+#  d	      double			      float			      8
+#  s        string               string            max 8 bytes

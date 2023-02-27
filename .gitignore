@@ -1,2 +1,10 @@
 /.project
 /.pydevproject
+*.cert
+*.key
+__pycache__
+.idea
+riaps.yaml
+*egg-info
+example/*.json
+build

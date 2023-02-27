@@ -1,0 +1,9 @@
+app CanbusExample {
+
+     host all {
+        network 172.21.20.70; //IP address of riaps_app_log_server
+    }
+
+    on (172.21.20.55) CANDriver(config="cfg/bbb_canbus_example.yaml");
+    on (172.21.20.55) CANScanner();
+}
