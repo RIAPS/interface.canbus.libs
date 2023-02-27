@@ -47,15 +47,27 @@ For an example of each interface refer back to the above example.
 
 # Installation
 ## Install canbus utils
+Should be included with BBB and RPi image but if not: 
 ```commandline
 sudo apt install can-utils
 ```
 ## Install RIAPS canbus library
+* On single node locally
 ```commandline
-git clone https://github.com/RIAPS/interface.canbus.libs
+sudo python3 -m pip install 'riaps.interfaces.mqtt @ git+https://github.com/RIAPS/interface.canbus.libs.git'
+```
+* On cluster of nodes using python fabric
+```commandline
+riaps_fab sys.sudo:'"python3 -m pip install git+https://github.com/RIAPS/interface.canbus.libs.git"'
+```
+
+* Via cloning
+```commandline
+git clone https://github.com/RIAPS/interface.canbus.libs.git
 cd interface.canbus.libs
 sudo python3 -m pip install .
 ```
+
 
 ## Configure and enable CANBUS interface.
 * Check that CAN interfaces are available. Note that while a Beaglebone black has the capability to support two CAN interfaces (can0 and can1) the default pin configuration only works for can1. A raspberry pi uses can0. 
