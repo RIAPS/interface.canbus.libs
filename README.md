@@ -50,6 +50,7 @@ Should be included with BBB and RPi image but if not:
 sudo apt install can-utils
 ```
 ## Install RIAPS CAN Bus Library
+* On single node locally
 ```commandline
 sudo python3 -m pip install 'riaps.interfaces.mqtt @ git+https://github.com/RIAPS/interface.canbus.libs.git'
 ```
