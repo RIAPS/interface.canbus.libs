@@ -52,7 +52,7 @@ sudo apt install can-utils
 ## Install RIAPS CAN Bus Library
 * On single node locally
 ```commandline
-sudo python3 -m pip install 'riaps.interfaces.mqtt @ git+https://github.com/RIAPS/interface.canbus.libs.git'
+sudo python3 -m pip install 'riaps.interfaces.canbus @ git+https://github.com/RIAPS/interface.canbus.libs.git'
 ```
 * On cluster of nodes using python fabric
 ```commandline
