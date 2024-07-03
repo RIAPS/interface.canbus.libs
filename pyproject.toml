@@ -22,7 +22,6 @@ classifiers = [
 ]
 dependencies = [
     "python-can",
-    "riaps-pycom"
 ]
 
 [project.optional-dependencies]
