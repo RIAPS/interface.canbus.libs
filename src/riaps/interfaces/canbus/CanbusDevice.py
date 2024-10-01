@@ -234,6 +234,11 @@ class CanbusDevice(Component):
 
     def send_canbus_msg(self, msg):
         cmd, vals = msg
+        self.logger.info(
+            f"\033[92m========================================================\n"
+            f"send_canbus_msg: {self.cfg},\n cmd: {cmd}, vals: {vals}\n"
+            f"=========================================================\033[0m"
+        )
         arbitration_id, mode, dta, rtr, ext = build_command(
             cfg=self.cfg, cmd=cmd, msg_vals=vals
         )
