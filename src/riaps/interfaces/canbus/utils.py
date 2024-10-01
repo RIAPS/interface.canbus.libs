@@ -24,7 +24,7 @@ def build_command(cfg, cmd, msg_vals):
     if mode not in ["command", "query"]:
         return f"{cmd} can not be sent, it is a {mode} not a command or query. Check Parameters in device yaml file."
 
-    id = int(cfg["Parameters"][cmd]["id"])
+    id = int(cfg["Parameters"][cmd]["id"], 16)
     len = int(cfg["Parameters"][cmd]["dlen"])
     rtr = bool(cfg["Parameters"][cmd]["remote"])
     ext = bool(cfg["Parameters"][cmd]["extended"])
@@ -52,11 +52,18 @@ def build_command(cfg, cmd, msg_vals):
         newval = newval * scaler
         if "f" not in value_format:
             newval = int(newval)
-            data_type = value_format.strip("<,>")  # remove endian spec to identify data type
-            if newval > data_type_properties[data_type]["max"] or newval < data_type_properties[data_type]["min"]:
+            data_type = value_format.strip(
+                "<,>"
+            )  # remove endian spec to identify data type
+            if (
+                newval > data_type_properties[data_type]["max"]
+                or newval < data_type_properties[data_type]["min"]
+            ):
                 sendcmd = (-2, [newval, value_format], rtr, ext)
-                return f"Could not send command {cmd}, value {newval} is out of bounds for data_type {data_type}. " \
-                       f"Check Parameters in device yaml file, and perhaps choose a different data type."
+                return (
+                    f"Could not send command {cmd}, value {newval} is out of bounds for data_type {data_type}. "
+                    f"Check Parameters in device yaml file, and perhaps choose a different data type."
+                )
 
         frame = struct.pack(value_format, newval)
         integer_data = struct.unpack("B" * size, frame)
